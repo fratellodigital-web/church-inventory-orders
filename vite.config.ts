@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import tsConfigPaths from "vite-tsconfig-paths";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { nitro } from "nitro/vite";
 
 export default defineConfig(({ mode }) => {
   // Inject VITE_* env vars into both client and SSR bundles.
@@ -50,6 +51,9 @@ export default defineConfig(({ mode }) => {
         },
         // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
         server: { entry: "server" },
+      }),
+      nitro({
+        preset: process.env.VERCEL ? "vercel" : undefined,
       }),
       react(),
     ],
