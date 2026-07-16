@@ -34,3 +34,9 @@ secrets/
 *.njsproj
 *.sln
 *.sw?
+
+# Build outputs & local files
+.vercel/
+Arquivo Geral.zip
+Arquivo Geral/
+package-lock.json
