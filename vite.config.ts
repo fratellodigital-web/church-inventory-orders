@@ -50,7 +50,7 @@ export default defineConfig(({ mode }) => {
           },
         },
         // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-        server: { entry: "server" },
+        server: { entry: "./src/server.ts" },
       }),
       nitro({
         preset: process.env.VERCEL ? "vercel" : undefined,
