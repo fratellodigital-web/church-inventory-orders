@@ -101,7 +101,7 @@ function PedidoDetalhe() {
         <ArrowLeft className="h-3.5 w-3.5" /> Voltar
       </Link>
       <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-        <article className="rounded-lg border border-border bg-card p-6">
+        <article className="rounded-lg border border-border bg-card p-4 sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="text-xs uppercase tracking-widest text-muted-foreground">Pedido</div>
@@ -143,11 +143,17 @@ function PedidoDetalhe() {
           ) : (
             <>
               <h2 className="mt-6 text-xs uppercase tracking-widest text-muted-foreground">Itens</h2>
-              <ul className="mt-2 divide-y divide-border">
+              <ul className="mt-3 divide-y divide-border">
                 {itens.map((it) => (
-                  <li key={it.id} className="flex items-center justify-between py-2 text-sm">
-                    <span>{it.snapshot_nome}</span>
-                    <span className="text-muted-foreground">{it.quantidade} {it.snapshot_unidade}</span>
+                  <li
+                    key={it.id}
+                    className="flex flex-col gap-1 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+                  >
+                    <span className="min-w-0 pr-0 font-medium sm:pr-3">{it.snapshot_nome}</span>
+                    <span className="shrink-0 text-muted-foreground sm:text-right">
+                      <span className="font-medium text-foreground">{it.quantidade}</span>{" "}
+                      {it.snapshot_unidade}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -343,35 +349,70 @@ function EditarPedidoForm({
         {linhas.length === 0 ? (
           <p className="text-sm text-muted-foreground">Adicione pelo menos um produto.</p>
         ) : (
-          <ul className="divide-y divide-border rounded-md border border-border">
+          <ul className="space-y-3">
             {linhas.map((it) => (
-              <li key={it.produto_id} className="flex flex-wrap items-center gap-2 p-3 text-sm">
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium">{it.nome}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {currency.format(it.preco)} · máx. {it.estoque_disponivel} {it.unidade}
+              <li
+                key={it.produto_id}
+                className="space-y-3 rounded-md border border-border p-4 text-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium">{it.nome}</div>
+                    <div className="mt-0.5 text-xs text-muted-foreground">
+                      {currency.format(it.preco)} · máx. {it.estoque_disponivel} {it.unidade}
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-9 w-9 shrink-0 text-muted-foreground"
+                    onClick={() => remove(it.produto_id)}
+                    aria-label="Remover item"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="space-y-1.5">
+                    <span className="text-xs text-muted-foreground">Quantidade</span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="outline"
+                        className="h-9 w-9"
+                        onClick={() => setQty(it.produto_id, it.quantidade - 1)}
+                        aria-label="Diminuir quantidade"
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </Button>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={it.estoque_disponivel}
+                        value={it.quantidade}
+                        onChange={(e) => setQty(it.produto_id, Number(e.target.value) || 1)}
+                        className="h-9 w-16 text-center"
+                      />
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="outline"
+                        className="h-9 w-9"
+                        onClick={() => setQty(it.produto_id, it.quantidade + 1)}
+                        aria-label="Aumentar quantidade"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end sm:justify-end">
+                    <span className="text-xs text-muted-foreground">Subtotal</span>
+                    <span className="font-medium">{currency.format(it.preco * it.quantidade)}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button type="button" size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(it.produto_id, it.quantidade - 1)}>
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={it.estoque_disponivel}
-                    value={it.quantidade}
-                    onChange={(e) => setQty(it.produto_id, Number(e.target.value) || 1)}
-                    className="h-7 w-14 text-center"
-                  />
-                  <Button type="button" size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(it.produto_id, it.quantidade + 1)}>
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
-                <span className="w-20 text-right text-muted-foreground">{currency.format(it.preco * it.quantidade)}</span>
-                <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground" onClick={() => remove(it.produto_id)}>
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
               </li>
             ))}
           </ul>
