@@ -1,5 +1,9 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "fondo_biblico",
+  "version": "1.1.0",
+  "description": "Fondo Biblico",
+  "author": "CCI",
+  "license": "MIT",
   "private": true,
   "sideEffects": false,
   "type": "module",
