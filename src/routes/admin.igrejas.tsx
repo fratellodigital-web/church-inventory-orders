@@ -38,10 +38,10 @@ function IgrejasPage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="font-display text-3xl">Igrejas</h1>
+        <h1 className="font-display text-3xl">Chiese</h1>
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEdit(null); }}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEdit(null)}><Plus className="mr-1 h-4 w-4" /> Nova</Button>
+            <Button onClick={() => setEdit(null)}><Plus className="mr-1 h-4 w-4" /> Nuova</Button>
           </DialogTrigger>
           <IgrejaDialog igreja={edit} onClose={() => setOpen(false)} />
         </Dialog>
@@ -55,11 +55,11 @@ function IgrejasPage() {
             <thead className="border-b border-border bg-secondary text-left text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="px-4 py-2">Nome</th>
-                <th className="px-4 py-2">Localidade</th>
-                <th className="px-4 py-2">Código</th>
-                <th className="px-4 py-2">Responsável</th>
-                <th className="px-4 py-2">Telefone</th>
-                <th className="px-4 py-2">Status</th>
+                <th className="px-4 py-2">Località</th>
+                <th className="px-4 py-2">Codice</th>
+                <th className="px-4 py-2">Responsabile</th>
+                <th className="px-4 py-2">Telefono</th>
+                <th className="px-4 py-2">Stato</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -73,9 +73,9 @@ function IgrejasPage() {
                     <td className="px-4 py-2 text-muted-foreground">{igreja.cidade ?? "—"}</td>
                     <td className="px-4 py-2 text-muted-foreground">{igreja.responsavel ?? "—"}</td>
                     <td className="px-4 py-2 text-muted-foreground">{igreja.telefone ?? "—"}</td>
-                    <td className="px-4 py-2 text-xs">{igreja.ativo ? "Ativa" : "Inativa"}</td>
+                    <td className="px-4 py-2 text-xs">{igreja.ativo ? "Attiva" : "Inattiva"}</td>
                     <td className="px-4 py-2 text-right">
-                      <Button size="sm" variant="outline" onClick={() => { setEdit(igreja); setOpen(true); }}>Editar</Button>
+                      <Button size="sm" variant="outline" onClick={() => { setEdit(igreja); setOpen(true); }}>Modifica</Button>
                     </td>
                   </tr>
                 );
@@ -111,25 +111,25 @@ function IgrejaDialog({ igreja, onClose }: { igreja: Igreja | null; onClose: () 
         ativo: form.ativo,
       },
     }),
-    onSuccess: () => { toast.success("Igreja salva"); qc.invalidateQueries({ queryKey: ["admin-igrejas"] }); onClose(); },
+    onSuccess: () => { toast.success("Chiesa salvata"); qc.invalidateQueries({ queryKey: ["admin-igrejas"] }); onClose(); },
     onError: (e: Error) => toast.error(e.message),
   });
 
   return (
     <DialogContent>
-      <DialogHeader><DialogTitle>{igreja ? "Editar igreja" : "Nova igreja"}</DialogTitle></DialogHeader>
+      <DialogHeader><DialogTitle>{igreja ? "Modifica chiesa" : "Nuova chiesa"}</DialogTitle></DialogHeader>
       <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); mut.mutate(); }}>
         <div><Label>Nome</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required /></div>
-        <div><Label>Localidade</Label><Input value={form.regiao} onChange={(e) => setForm({ ...form, regiao: e.target.value })} placeholder="Ex.: Belvedere, Codogno..." /></div>
-        <div><Label>Código</Label><Input value={form.cidade} onChange={(e) => setForm({ ...form, cidade: e.target.value })} /></div>
-        <div><Label>Responsável</Label><Input value={form.responsavel} onChange={(e) => setForm({ ...form, responsavel: e.target.value })} /></div>
-        <div><Label>Telefone</Label><Input value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
+        <div><Label>Località</Label><Input value={form.regiao} onChange={(e) => setForm({ ...form, regiao: e.target.value })} placeholder="Ex.: Belvedere, Codogno..." /></div>
+        <div><Label>Codice</Label><Input value={form.cidade} onChange={(e) => setForm({ ...form, cidade: e.target.value })} /></div>
+        <div><Label>Responsabile</Label><Input value={form.responsavel} onChange={(e) => setForm({ ...form, responsavel: e.target.value })} /></div>
+        <div><Label>Telefono</Label><Input value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
         <div className="flex items-center justify-between rounded-md border border-border p-3">
-          <Label>Ativa</Label>
+          <Label>Attiva</Label>
           <Switch checked={form.ativo} onCheckedChange={(v) => setForm({ ...form, ativo: v })} />
         </div>
         <DialogFooter>
-          <Button type="submit" disabled={mut.isPending}>{mut.isPending ? "Salvando..." : "Salvar"}</Button>
+          <Button type="submit" disabled={mut.isPending}>{mut.isPending ? "Salvataggio..." : "Salva"}</Button>
         </DialogFooter>
       </form>
     </DialogContent>

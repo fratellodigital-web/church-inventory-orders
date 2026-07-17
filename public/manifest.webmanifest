@@ -1,7 +1,7 @@
 {
-  "name": "Fundo Bíblico - CCI",
-  "short_name": "Fundo Bíblico",
-  "description": "Sistema de pedidos e gestão de estoque do Fundo Bíblico - CCI",
+  "name": "Fondo Biblico - CCI",
+  "short_name": "Fondo Biblico",
+  "description": "Sistema di ordini e gestione magazzino del Fondo Biblico - CCI",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

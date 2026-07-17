@@ -1,9 +1,10 @@
 const labels: Record<string, { text: string; cls: string }> = {
-  pendente: { text: "Pendente", cls: "bg-secondary text-secondary-foreground" },
-  pago: { text: "Pago", cls: "bg-foreground text-background" },
-  em_separacao: { text: "Em separação", cls: "bg-accent text-accent-foreground" },
-  entregue: { text: "Entregue", cls: "bg-foreground text-background" },
-  cancelado: { text: "Cancelado", cls: "bg-destructive text-destructive-foreground" },
+  pendente: { text: "In attesa", cls: "bg-secondary text-secondary-foreground" },
+  aprovado: { text: "Approvato", cls: "bg-primary text-primary-foreground" },
+  pago: { text: "Pagato", cls: "bg-foreground text-background" },
+  em_separacao: { text: "In preparazione", cls: "bg-accent text-accent-foreground" },
+  entregue: { text: "Consegnato", cls: "bg-foreground text-background" },
+  cancelado: { text: "Annullato", cls: "bg-destructive text-destructive-foreground" },
 };
 
 export function StatusBadge({ status }: { status: string }) {

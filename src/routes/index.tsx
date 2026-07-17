@@ -10,8 +10,8 @@ import { ChevronRight, MapPin } from "lucide-react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Fundo Bíblico - CCI" },
-      { name: "description", content: "Selecione sua localidade e igreja para iniciar um pedido no Fundo Bíblico - CCI." },
+      { title: "Fondo Biblico - CCI" },
+      { name: "description", content: "Seleziona la località e la chiesa per avviare un ordine sul Fondo Biblico - CCI." },
     ],
   }),
   component: IndexPage,
@@ -50,14 +50,14 @@ function IndexPage() {
       <AppHeader />
       <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16">
         <div className="mb-8 text-center">
-          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Bem-vindo(a)</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Benvenuto/a</p>
           <h1 className="mt-2 font-display text-4xl text-foreground sm:text-5xl">
-            {localidade ? "Selecione sua igreja" : "Selecione a localidade"}
+            {localidade ? "Seleziona la tua chiesa" : "Seleziona la località"}
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">
             {localidade
-              ? "Escolha a igreja para a qual fará o pedido."
-              : "Primeiro, escolha a localidade da igreja."}
+              ? "Scegli la chiesa per cui farai l'ordine."
+              : "Prima scegli la località della chiesa."}
           </p>
         </div>
 
@@ -69,7 +69,7 @@ function IndexPage() {
           </div>
         ) : localidades.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
-            Nenhuma igreja cadastrada ainda.
+            Nessuna chiesa registrata ancora.
           </p>
         ) : (
           <>
@@ -92,11 +92,11 @@ function IndexPage() {
 
             {!localidade ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
-                Toque em uma localidade acima para ver as igrejas.
+                Tocca una località sopra per vedere le chiese.
               </p>
             ) : filtradas.length === 0 ? (
               <p className="py-10 text-center text-sm text-muted-foreground">
-                Nenhuma igreja cadastrada nesta localidade.
+                Nessuna chiesa registrata in questa località.
               </p>
             ) : (
               <ul className="space-y-2">
@@ -129,12 +129,12 @@ function IndexPage() {
 
         {semLocalidade.length > 0 && (
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            Há {semLocalidade.length} igreja(s) sem localidade definida. Defina a localidade no painel admin.
+            Ci sono {semLocalidade.length} chiesa/e senza località. Imposta la località nel pannello admin.
           </p>
         )}
 
         <p className="mt-12 text-center text-xs text-muted-foreground">
-          Administrador? <a href="/admin" className="underline hover:text-foreground">Entrar no painel</a>
+          Amministratore? <a href="/admin" className="underline hover:text-foreground">Accedi al pannello</a>
         </p>
       </main>
     </div>

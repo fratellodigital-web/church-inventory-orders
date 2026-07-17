@@ -2,7 +2,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-export const listarIgrejas = createServerFn({ method: "GET" }).handler(async () => {
+export type IgrejaPublica = {
+  id: string;
+  nome: string;
+  cidade: string | null;
+  regiao: string | null;
+};
+
+export const listarIgrejas = createServerFn({ method: "GET" }).handler(async (): Promise<IgrejaPublica[]> => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("igrejas")
@@ -10,7 +17,7 @@ export const listarIgrejas = createServerFn({ method: "GET" }).handler(async () 
     .eq("ativo", true)
     .order("nome");
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as IgrejaPublica[];
 });
 
 export const listarProdutos = createServerFn({ method: "GET" }).handler(async () => {
@@ -61,7 +68,7 @@ export const criarPedido = createServerFn({ method: "POST" })
       .eq("id", data.igreja_id)
       .maybeSingle();
     if (igErr) throw new Error(igErr.message);
-    if (!igreja || !igreja.ativo) throw new Error("Igreja inválida");
+    if (!igreja || !igreja.ativo) throw new Error("Chiesa non valida");
 
     // carrega produtos
     const ids = data.itens.map((i) => i.produto_id);
@@ -74,9 +81,9 @@ export const criarPedido = createServerFn({ method: "POST" })
     const prodMap = new Map((produtos ?? []).map((p) => [p.id, p]));
     for (const item of data.itens) {
       const p = prodMap.get(item.produto_id);
-      if (!p || !p.ativo) throw new Error(`Produto indisponível`);
+      if (!p || !p.ativo) throw new Error(`Prodotto non disponibile`);
       if (p.estoque_disponivel < item.quantidade) {
-        throw new Error(`Estoque insuficiente para "${p.nome}" (disponível: ${p.estoque_disponivel})`);
+        throw new Error(`Magazzino insufficiente per "${p.nome}" (disponibile: ${p.estoque_disponivel})`);
       }
     }
 
@@ -91,7 +98,7 @@ export const criarPedido = createServerFn({ method: "POST" })
       })
       .select("id, numero")
       .single();
-    if (pedErr || !pedido) throw new Error(pedErr?.message || "Erro ao criar pedido");
+    if (pedErr || !pedido) throw new Error(pedErr?.message || "Errore nella creazione dell'ordine");
 
     // itens + reserva
     const itensInsert = data.itens.map((i) => {
@@ -156,14 +163,25 @@ export const buscarPedido = createServerFn({ method: "GET" })
   .inputValidator((d: { numero: string }) => ({ numero: String(d.numero) }))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { pedidoMostraPreco } = await import("./pedido-status");
     const { data: pedido, error } = await supabaseAdmin
       .from("pedidos")
       .select(
-        "id, numero, status, observacao, solicitante_nome, created_at, pago_em, entregue_em, igrejas(nome, cidade), pedido_itens(quantidade, snapshot_nome, snapshot_unidade), documentos_saida(numero)",
+        "id, numero, status, observacao, solicitante_nome, created_at, pago_em, entregue_em, igrejas(nome, cidade), pedido_itens(quantidade, snapshot_nome, snapshot_unidade, snapshot_preco), documentos_saida(numero)",
       )
       .eq("numero", data.numero)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!pedido) return null;
-    return pedido;
+
+    if (!pedidoMostraPreco(pedido.status)) {
+      return { ...pedido, total_valor: null };
+    }
+
+    const itens = (pedido.pedido_itens ?? []) as { quantidade: number; snapshot_preco: number | null }[];
+    const total_valor = itens.reduce(
+      (s, it) => s + Number(it.snapshot_preco ?? 0) * it.quantidade,
+      0,
+    );
+    return { ...pedido, total_valor };
   });

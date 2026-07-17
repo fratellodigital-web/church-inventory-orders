@@ -174,6 +174,7 @@ export type Database = {
           produto_id: string
           quantidade: number
           snapshot_nome: string
+          snapshot_preco: number | null
           snapshot_unidade: string
         }
         Insert: {
@@ -183,6 +184,7 @@ export type Database = {
           produto_id: string
           quantidade: number
           snapshot_nome: string
+          snapshot_preco?: number | null
           snapshot_unidade: string
         }
         Update: {
@@ -192,6 +194,7 @@ export type Database = {
           produto_id?: string
           quantidade?: number
           snapshot_nome?: string
+          snapshot_preco?: number | null
           snapshot_unidade?: string
         }
         Relationships: [
@@ -213,6 +216,7 @@ export type Database = {
       }
       pedidos: {
         Row: {
+          aprovado_em: string | null
           cancelado_em: string | null
           comprovante_drive_file_id: string | null
           comprovante_numero: string | null
@@ -229,6 +233,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aprovado_em?: string | null
           cancelado_em?: string | null
           comprovante_drive_file_id?: string | null
           comprovante_numero?: string | null
@@ -245,6 +250,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aprovado_em?: string | null
           cancelado_em?: string | null
           comprovante_drive_file_id?: string | null
           comprovante_numero?: string | null
@@ -345,6 +351,7 @@ export type Database = {
         | "ajuste"
       pedido_status:
         | "pendente"
+        | "aprovado"
         | "pago"
         | "em_separacao"
         | "entregue"
@@ -485,6 +492,7 @@ export const Constants = {
       ],
       pedido_status: [
         "pendente",
+        "aprovado",
         "pago",
         "em_separacao",
         "entregue",

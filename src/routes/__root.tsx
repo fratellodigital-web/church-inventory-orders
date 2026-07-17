@@ -18,14 +18,14 @@ function NotFoundComponent() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="font-display text-7xl text-foreground">404</h1>
-        <h2 className="mt-2 text-lg font-medium text-foreground">Página não encontrada</h2>
-        <p className="mt-2 text-sm text-muted-foreground">A página que você procura não existe.</p>
+        <h2 className="mt-2 text-lg font-medium text-foreground">Pagina non trovata</h2>
+        <p className="mt-2 text-sm text-muted-foreground">La pagina che stai cercando non esiste.</p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
           >
-            Voltar ao início
+            Torna all&apos;inizio
           </Link>
         </div>
       </div>
@@ -40,7 +40,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-lg font-medium text-foreground">Algo deu errado</h1>
+        <h1 className="text-lg font-medium text-foreground">Qualcosa è andato storto</h1>
         <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -50,13 +50,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            Tentar novamente
+            Riprova
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent"
           >
-            Início
+            Inizio
           </a>
         </div>
       </div>
@@ -69,11 +69,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Fundo Bíblico - CCI" },
-      { name: "description", content: "Sistema de pedidos e gestão de estoque do Fundo Bíblico - CCI." },
+      { title: "Fondo Biblico - CCI" },
+      { name: "description", content: "Sistema di ordini e gestione magazzino del Fondo Biblico - CCI." },
       { name: "theme-color", content: "#171717" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-title", content: "Fundo Bíblico" },
+      { name: "apple-mobile-web-app-title", content: "Fondo Biblico" },
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
     ],
     links: [
@@ -95,7 +95,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="it">
       <head>
         <HeadContent />
       </head>
