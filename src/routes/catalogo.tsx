@@ -13,7 +13,7 @@ import { ShoppingCart, Minus, Plus, Trash2, Search, Package, ClipboardList } fro
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/catalogo")({
-  head: () => ({ meta: [{ title: "Catálogo — Fundo Bíblico" }] }),
+  head: () => ({ meta: [{ title: "Catalogo — Fondo Biblico" }] }),
   component: CatalogoPage,
 });
 
@@ -41,7 +41,7 @@ function CatalogoPage() {
             <Link to="/meus-pedidos">
               <Button variant="outline" size="sm">
                 <ClipboardList className="h-4 w-4" />
-                <span className="ml-2 hidden sm:inline">Pedidos</span>
+                <span className="ml-2 hidden sm:inline">Ordini</span>
               </Button>
             </Link>
             <CartButton total={totalItens} />
@@ -51,9 +51,9 @@ function CatalogoPage() {
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="font-display text-3xl text-foreground sm:text-4xl">Catálogo</h1>
+            <h1 className="font-display text-3xl text-foreground sm:text-4xl">Catalogo</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Pedido para <span className="font-medium text-foreground">{igreja?.nome}</span>
+              Ordine per <span className="font-medium text-foreground">{igreja?.nome}</span>
             </p>
           </div>
           <div className="relative w-full sm:w-72">
@@ -61,7 +61,7 @@ function CatalogoPage() {
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar produto..."
+              placeholder="Cerca prodotto..."
               className="pl-9"
             />
           </div>
@@ -74,7 +74,7 @@ function CatalogoPage() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <p className="py-20 text-center text-sm text-muted-foreground">Nenhum produto encontrado.</p>
+          <p className="py-20 text-center text-sm text-muted-foreground">Nessun prodotto trovato.</p>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((p) => {
@@ -116,10 +116,10 @@ function CatalogoPage() {
                           preco: p.preco,
                           estoque_disponivel: p.estoque_disponivel,
                         });
-                        toast.success(`${p.nome} adicionado`);
+                        toast.success(`${p.nome} aggiunto`);
                       }}
                     >
-                      <Plus className="mr-1 h-3 w-3" /> Adicionar
+                      <Plus className="mr-1 h-3 w-3" /> Aggiungi
                     </Button>
                   </div>
                 </article>
@@ -151,7 +151,7 @@ function CartButton({ total }: { total: number }) {
         },
       }),
     onSuccess: (res) => {
-      toast.success(`Pedido ${res.numero} criado!`);
+      toast.success(`Ordine ${res.numero} creato!`);
       clear();
       setOpen(false);
       router.navigate({ to: "/pedido/$numero", params: { numero: res.numero } });
@@ -164,7 +164,7 @@ function CartButton({ total }: { total: number }) {
       <SheetTrigger asChild>
         <Button variant="outline" size="sm" className="relative">
           <ShoppingCart className="h-4 w-4" />
-          <span className="ml-2 hidden sm:inline">Carrinho</span>
+          <span className="ml-2 hidden sm:inline">Carrello</span>
           {total > 0 && (
             <span className="absolute -right-2 -top-2 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground">
               {total}
@@ -174,11 +174,11 @@ function CartButton({ total }: { total: number }) {
       </SheetTrigger>
       <SheetContent className="flex w-full flex-col sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>Seu pedido</SheetTitle>
+          <SheetTitle>Il tuo ordine</SheetTitle>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto px-4">
           {items.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">Carrinho vazio.</p>
+            <p className="py-10 text-center text-sm text-muted-foreground">Carrello vuoto.</p>
           ) : (
             <ul className="space-y-3 py-2">
               {items.map((it) => (
@@ -212,20 +212,20 @@ function CartButton({ total }: { total: number }) {
           )}
           {items.length > 0 && (
             <div className="space-y-3 py-4">
-              <Input placeholder="Seu nome (opcional)" value={solicitante} onChange={(e) => setSolicitante(e.target.value)} />
-              <Textarea placeholder="Observação (opcional)" value={obs} onChange={(e) => setObs(e.target.value)} rows={3} />
+              <Input placeholder="Il tuo nome (opzionale)" value={solicitante} onChange={(e) => setSolicitante(e.target.value)} />
+              <Textarea placeholder="Nota (opzionale)" value={obs} onChange={(e) => setObs(e.target.value)} rows={3} />
             </div>
           )}
         </div>
         <SheetFooter className="flex-col gap-3 border-t border-border pt-4">
           {items.length > 0 && (
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Total</span>
+              <span className="text-muted-foreground">Totale</span>
               <span className="text-lg font-semibold text-foreground">{formatPreco(totalValor)}</span>
             </div>
           )}
           <Button className="w-full" disabled={items.length === 0 || mut.isPending} onClick={() => mut.mutate()}>
-            {mut.isPending ? "Enviando..." : "Enviar pedido"}
+            {mut.isPending ? "Invio in corso..." : "Invia ordine"}
           </Button>
         </SheetFooter>
       </SheetContent>

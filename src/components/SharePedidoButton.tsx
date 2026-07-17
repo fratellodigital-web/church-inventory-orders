@@ -33,7 +33,7 @@ export function SharePedidoButton({
       size={size}
       className={cn(showLabel ? "" : "px-2", className)}
       onClick={handleShare}
-      title="Enviar pelo WhatsApp"
+      title="Invia tramite WhatsApp"
     >
       <MessageCircle className={cn("h-4 w-4", showLabel && "mr-1.5")} />
       {showLabel && "WhatsApp"}

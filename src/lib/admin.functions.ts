@@ -20,7 +20,7 @@ export const adminLogin = createServerFn({ method: "POST" })
       .eq("id", 1)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    if (!cfg || cfg.password !== data.password) throw new Error("Senha incorreta");
+    if (!cfg || cfg.password !== data.password) throw new Error("Password errata");
     const { issueAdminCookie } = await import("./admin-session.server");
     issueAdminCookie();
     return { ok: true };
@@ -45,7 +45,7 @@ export const adminChangePassword = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const sb = await admin();
     const { data: cfg } = await sb.from("admin_config").select("password").eq("id", 1).maybeSingle();
-    if (!cfg || cfg.password !== data.atual) throw new Error("Senha atual incorreta");
+    if (!cfg || cfg.password !== data.atual) throw new Error("Password attuale errata");
     const { error } = await sb.from("admin_config").update({ password: data.nova }).eq("id", 1);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -123,9 +123,9 @@ export const adminSalvarComprovante = createServerFn({ method: "POST" })
     if (data.imagem) {
       const { base64, contentType, nome } = data.imagem;
       const allowed = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
-      if (!allowed.includes(contentType)) throw new Error("Formato de imagem não suportado");
+      if (!allowed.includes(contentType)) throw new Error("Formato immagine non supportato");
       const bytes = Buffer.from(base64, "base64");
-      if (bytes.byteLength > 5 * 1024 * 1024) throw new Error("Imagem maior que 5 MB");
+      if (bytes.byteLength > 5 * 1024 * 1024) throw new Error("Immagine più grande di 5 MB");
       const ext = (nome.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
 
       const { data: pedido } = await sb
@@ -180,8 +180,8 @@ export const adminEditarPedido = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (pErr) throw new Error(pErr.message);
-    if (!pedido) throw new Error("Pedido não encontrado");
-    if (pedido.status !== "pendente") throw new Error("Só é possível editar pedidos pendentes");
+    if (!pedido) throw new Error("Ordine non trovato");
+    if (pedido.status !== "pendente") throw new Error("È possibile modificare solo gli ordini in attesa");
 
     const oldItems = pedido.pedido_itens ?? [];
     const oldMap = new Map(oldItems.map((i) => [i.produto_id, i.quantidade]));
@@ -201,11 +201,11 @@ export const adminEditarPedido = createServerFn({ method: "POST" })
       if (delta === 0) continue;
 
       const p = pm.get(produto_id);
-      if (newQty > 0 && (!p || !p.ativo)) throw new Error("Produto indisponível");
+      if (newQty > 0 && (!p || !p.ativo)) throw new Error("Prodotto non disponibile");
 
       if (delta > 0 && p) {
         if (p.estoque_disponivel < delta) {
-          throw new Error(`Estoque insuficiente para "${p.nome}" (disponível: ${p.estoque_disponivel})`);
+          throw new Error(`Magazzino insufficiente per "${p.nome}" (disponibile: ${p.estoque_disponivel})`);
         }
         const next = p.estoque_disponivel - delta;
         const { error: uErr } = await sb.from("produtos").update({ estoque_disponivel: next }).eq("id", produto_id);
@@ -243,7 +243,7 @@ export const adminEditarPedido = createServerFn({ method: "POST" })
 
     for (const [produto_id, quantidade] of newMap) {
       const p = pm.get(produto_id);
-      if (!p) throw new Error("Produto indisponível");
+      if (!p) throw new Error("Prodotto non disponibile");
       const existing = oldItems.find((i) => i.produto_id === produto_id);
       if (existing) {
         const { error } = await sb
@@ -285,8 +285,8 @@ export const adminMarcarPago = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (pErr) throw new Error(pErr.message);
-    if (!pedido) throw new Error("Pedido não encontrado");
-    if (pedido.status !== "pendente") throw new Error("Pedido não está pendente");
+    if (!pedido) throw new Error("Ordine non trovato");
+    if (pedido.status !== "pendente") throw new Error("L'ordine non è in attesa");
 
     // checa estoque físico antes de abater
     const ids = pedido.pedido_itens.map((i) => i.produto_id);
@@ -295,7 +295,7 @@ export const adminMarcarPago = createServerFn({ method: "POST" })
     for (const it of pedido.pedido_itens) {
       const p = pm.get(it.produto_id);
       if (!p || p.estoque_fisico < it.quantidade) {
-        throw new Error(`Estoque físico insuficiente para "${p?.nome || "produto"}"`);
+        throw new Error(`Magazzino fisico insufficiente per "${p?.nome || "prodotto"}"`);
       }
     }
 
@@ -377,9 +377,9 @@ export const adminCancelarPedido = createServerFn({ method: "POST" })
       .select("id, numero, status, pedido_itens(produto_id, quantidade)")
       .eq("id", data.id)
       .maybeSingle();
-    if (!pedido) throw new Error("Pedido não encontrado");
-    if (pedido.status === "cancelado") throw new Error("Já cancelado");
-    if (pedido.status === "entregue") throw new Error("Pedido já entregue, não pode cancelar");
+    if (!pedido) throw new Error("Ordine non trovato");
+    if (pedido.status === "cancelado") throw new Error("Già annullato");
+    if (pedido.status === "entregue") throw new Error("Ordine già consegnato, non può essere annullato");
 
     // se ainda estava pendente, estorna a reserva
     if (pedido.status === "pendente") {
@@ -483,9 +483,9 @@ export const adminSalvarProduto = createServerFn({ method: "POST" })
     if (data.imagem && produtoId) {
       const { base64, contentType, nome } = data.imagem;
       const allowed = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
-      if (!allowed.includes(contentType)) throw new Error("Formato de imagem não suportado");
+      if (!allowed.includes(contentType)) throw new Error("Formato immagine non supportato");
       const bytes = Buffer.from(base64, "base64");
-      if (bytes.byteLength > 5 * 1024 * 1024) throw new Error("Imagem maior que 5 MB");
+      if (bytes.byteLength > 5 * 1024 * 1024) throw new Error("Immagine più grande di 5 MB");
       const ext = (nome.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
       const { uploadFile } = await import("./google-drive.server");
       const uploaded = await uploadFile({
@@ -572,7 +572,7 @@ export const adminEntradaEstoque = createServerFn({ method: "POST" })
       .select("id, estoque_fisico, estoque_disponivel")
       .eq("id", data.produto_id)
       .maybeSingle();
-    if (pErr || !p) throw new Error("Produto não encontrado");
+    if (pErr || !p) throw new Error("Prodotto non trovato");
     const { error: uErr } = await sb
       .from("produtos")
       .update({

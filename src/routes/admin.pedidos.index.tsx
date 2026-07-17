@@ -33,20 +33,20 @@ type Pedido = {
 };
 
 const FILTROS = [
-  { label: "Todos", value: "" },
-  { label: "Pendentes", value: "pendente" },
-  { label: "Pagos", value: "pago" },
-  { label: "Em separação", value: "em_separacao" },
-  { label: "Entregues", value: "entregue" },
-  { label: "Cancelados", value: "cancelado" },
+  { label: "Tutti", value: "" },
+  { label: "In attesa", value: "pendente" },
+  { label: "Pagati", value: "pago" },
+  { label: "In preparazione", value: "em_separacao" },
+  { label: "Consegnati", value: "entregue" },
+  { label: "Annullati", value: "cancelado" },
 ];
 
 const STATUS_LABEL: Record<string, string> = {
-  pendente: "Pendente",
-  pago: "Pago",
-  em_separacao: "Em separação",
-  entregue: "Entregue",
-  cancelado: "Cancelado",
+  pendente: "In attesa",
+  pago: "Pagato",
+  em_separacao: "In preparazione",
+  entregue: "Consegnato",
+  cancelado: "Annullato",
 };
 
 // Colunas do kanban (ordem do fluxo).
@@ -74,7 +74,7 @@ function PedidosPage() {
   return (
     <div>
       <div className="mb-4 flex flex-col gap-3">
-        <h1 className="font-display text-3xl">Pedidos</h1>
+        <h1 className="font-display text-3xl">Ordini</h1>
         {!isDesktop && (
           <div className="-mx-4 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
             <div className="flex w-max flex-nowrap gap-1.5 pb-1">
@@ -107,7 +107,7 @@ function PedidosPage() {
       ) : isDesktop ? (
         <KanbanBoard pedidos={(data ?? []) as Pedido[]} />
       ) : !data || data.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">Nenhum pedido.</p>
+        <p className="py-10 text-center text-sm text-muted-foreground">Nessun ordine.</p>
       ) : (
         <ListaMobile pedidos={data as Pedido[]} />
       )}
@@ -129,17 +129,17 @@ function KanbanBoard({ pedidos }: { pedidos: Pedido[] }) {
     mutationFn: async ({ id, target }: { id: string; target: string }) => {
       if (target === "pago") {
         const r = await pagar({ data: { id } });
-        return `Pago. Documento ${r.documento_numero} gerado.`;
+        return `Pagato. Documento ${r.documento_numero} generato.`;
       }
       if (target === "em_separacao" || target === "entregue") {
         await mudar({ data: { id, status: target } });
-        return `Movido para ${STATUS_LABEL[target]}`;
+        return `Spostato a ${STATUS_LABEL[target]}`;
       }
       if (target === "cancelado") {
         await cancelar({ data: { id } });
-        return "Pedido cancelado";
+        return "Ordine annullato";
       }
-      throw new Error("Transição inválida");
+      throw new Error("Transizione non valida");
     },
     onSuccess: (msg) => {
       toast.success(msg);
@@ -161,7 +161,7 @@ function KanbanBoard({ pedidos }: { pedidos: Pedido[] }) {
     const pedido = pedidos.find((p) => p.id === id);
     if (!pedido || pedido.status === target) return;
     if (!(TRANSICOES[pedido.status] ?? []).includes(target)) {
-      toast.error(`Não é possível mover de ${STATUS_LABEL[pedido.status]} para ${STATUS_LABEL[target]}`);
+      toast.error(`Non è possibile spostare da ${STATUS_LABEL[pedido.status]} a ${STATUS_LABEL[target]}`);
       return;
     }
     mut.mutate({ id, target });
@@ -262,14 +262,14 @@ function KanbanCard({
           />
           <Link to="/admin/pedidos/$id" params={{ id: pedido.id }} onClick={(e) => e.stopPropagation()}>
             <Button size="sm" variant="ghost" className="h-6 px-2 text-xs">
-              Abrir
+              Apri
             </Button>
           </Link>
         </div>
       </div>
       <div className="mt-1 truncate text-xs text-muted-foreground">{pedido.igrejas?.nome ?? "—"}</div>
       <div className="mt-0.5 text-[11px] text-muted-foreground">
-        {new Date(pedido.created_at).toLocaleString("pt-BR")}
+        {new Date(pedido.created_at).toLocaleString("it-IT")}
       </div>
     </div>
   );
@@ -294,7 +294,7 @@ function ListaMobile({ pedidos }: { pedidos: Pedido[] }) {
                 </span>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                {new Date(p.created_at).toLocaleString("pt-BR")}
+                {new Date(p.created_at).toLocaleString("it-IT")}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1">
@@ -308,7 +308,7 @@ function ListaMobile({ pedidos }: { pedidos: Pedido[] }) {
               />
               <Link to="/admin/pedidos/$id" params={{ id: p.id }}>
                 <Button size="sm" variant="outline">
-                  Abrir
+                  Apri
                 </Button>
               </Link>
             </div>
@@ -347,7 +347,7 @@ function StatusSelect({
     mutationFn: async (novo: string) => {
       if (novo === "pago") {
         const r = await pagar({ data: { id } });
-        return { msg: `Pago. Documento ${r.documento_numero} gerado.` };
+        return { msg: `Pagato. Documento ${r.documento_numero} generato.` };
       }
       if (novo === "em_separacao" || novo === "entregue") {
         await mudar({ data: { id, status: novo } });
@@ -355,9 +355,9 @@ function StatusSelect({
       }
       if (novo === "cancelado") {
         await cancelar({ data: { id } });
-        return { msg: `${numero}: cancelado` };
+        return { msg: `${numero}: annullato` };
       }
-      throw new Error("Transição inválida");
+      throw new Error("Transizione non valida");
     },
     onSuccess: (r) => { toast.success(r.msg); refresh(); },
     onError: (e: Error) => { toast.error(e.message); refresh(); },
@@ -374,7 +374,7 @@ function StatusSelect({
     >
       <SelectTrigger
         className={`h-9 text-xs ${fullWidth ? "w-full" : "w-[150px]"}`}
-        aria-label="Mudar status"
+        aria-label="Cambia stato"
       >
         <SelectValue />
       </SelectTrigger>

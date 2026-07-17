@@ -31,7 +31,7 @@ function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve((reader.result as string).split(",")[1] ?? "");
-    reader.onerror = () => reject(new Error("Falha ao ler a imagem"));
+    reader.onerror = () => reject(new Error("Impossibile leggere l'immagine"));
     reader.readAsDataURL(file);
   });
 }
@@ -57,7 +57,7 @@ function PedidoDetalhe() {
   const mPagar = useMutation({
     mutationFn: () => pagar({ data: { id } }),
     onSuccess: (res) => {
-      toast.success(`Pago. Documento ${res.documento_numero} gerado.`);
+      toast.success(`Pagato. Documento ${res.documento_numero} generato.`);
       refresh();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -65,24 +65,24 @@ function PedidoDetalhe() {
 
   const mEntregue = useMutation({
     mutationFn: () => mudar({ data: { id, status: "entregue" } }),
-    onSuccess: () => { toast.success("Marcado como entregue"); refresh(); },
+    onSuccess: () => { toast.success("Segnato come consegnato"); refresh(); },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const mSeparacao = useMutation({
     mutationFn: () => mudar({ data: { id, status: "em_separacao" } }),
-    onSuccess: () => { toast.success("Em separação"); refresh(); },
+    onSuccess: () => { toast.success("In preparazione"); refresh(); },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const mCancelar = useMutation({
     mutationFn: () => cancelar({ data: { id } }),
-    onSuccess: () => { toast.success("Pedido cancelado"); refresh(); },
+    onSuccess: () => { toast.success("Ordine annullato"); refresh(); },
     onError: (e: Error) => toast.error(e.message),
   });
 
   if (isLoading) return <div className="h-60 animate-pulse rounded-lg bg-muted" />;
-  if (!p) return <p>Não encontrado</p>;
+  if (!p) return <p>Non trovato</p>;
 
   const igreja = p.igrejas as { nome: string; cidade: string | null; responsavel: string | null; telefone: string | null } | null;
   const itens = p.pedido_itens as {
@@ -98,35 +98,35 @@ function PedidoDetalhe() {
   return (
     <div>
       <Link to="/admin/pedidos" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" /> Voltar
+        <ArrowLeft className="h-3.5 w-3.5" /> Indietro
       </Link>
       <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
         <article className="rounded-lg border border-border bg-card p-4 sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-xs uppercase tracking-widest text-muted-foreground">Pedido</div>
+              <div className="text-xs uppercase tracking-widest text-muted-foreground">Ordine</div>
               <h1 className="font-display text-3xl">{p.numero}</h1>
-              <p className="mt-1 text-sm text-muted-foreground">{new Date(p.created_at).toLocaleString("pt-BR")}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{new Date(p.created_at).toLocaleString("it-IT")}</p>
             </div>
             <StatusBadge status={p.status} />
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
             <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">Igreja</div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">Chiesa</div>
               <div className="font-medium">{igreja?.nome}</div>
               {igreja?.cidade && <div className="text-muted-foreground">{igreja.cidade}</div>}
             </div>
             {igreja?.responsavel && (
               <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">Responsável</div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">Responsabile</div>
                 <div className="font-medium">{igreja.responsavel}</div>
                 {igreja.telefone && <div className="text-muted-foreground">{igreja.telefone}</div>}
               </div>
             )}
             {p.solicitante_nome && !isPendente && (
               <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">Solicitante</div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">Richiedente</div>
                 <div className="font-medium">{p.solicitante_nome}</div>
               </div>
             )}
@@ -142,7 +142,7 @@ function PedidoDetalhe() {
             />
           ) : (
             <>
-              <h2 className="mt-6 text-xs uppercase tracking-widest text-muted-foreground">Itens</h2>
+              <h2 className="mt-6 text-xs uppercase tracking-widest text-muted-foreground">Articoli</h2>
               <ul className="mt-3 divide-y divide-border">
                 {itens.map((it) => (
                   <li
@@ -160,7 +160,7 @@ function PedidoDetalhe() {
 
               {p.observacao && (
                 <>
-                  <h2 className="mt-6 text-xs uppercase tracking-widest text-muted-foreground">Observação</h2>
+                  <h2 className="mt-6 text-xs uppercase tracking-widest text-muted-foreground">Nota</h2>
                   <p className="mt-1 whitespace-pre-wrap text-sm">{p.observacao}</p>
                 </>
               )}
@@ -170,27 +170,27 @@ function PedidoDetalhe() {
 
         <aside className="space-y-4">
           <div className="rounded-lg border border-border bg-card p-4">
-            <h3 className="text-xs uppercase tracking-widest text-muted-foreground">Ações</h3>
+            <h3 className="text-xs uppercase tracking-widest text-muted-foreground">Azioni</h3>
             <div className="mt-3 flex flex-col gap-2">
               <SharePedidoButton numero={p.numero} igrejaNome={igreja?.nome} className="w-full" />
               {p.status === "pendente" && (
                 <>
                   <Button onClick={() => mPagar.mutate()} disabled={mPagar.isPending}>
-                    {mPagar.isPending ? "Processando..." : "Marcar como pago"}
+                    {mPagar.isPending ? "Elaborazione..." : "Segna come pagato"}
                   </Button>
                   <Button variant="outline" onClick={() => mCancelar.mutate()} disabled={mCancelar.isPending}>
-                    Cancelar pedido
+                    Annulla ordine
                   </Button>
                 </>
               )}
               {p.status === "pago" && (
                 <>
-                  <Button onClick={() => mSeparacao.mutate()} disabled={mSeparacao.isPending}>Em separação</Button>
-                  <Button variant="outline" onClick={() => mEntregue.mutate()} disabled={mEntregue.isPending}>Marcar entregue</Button>
+                  <Button onClick={() => mSeparacao.mutate()} disabled={mSeparacao.isPending}>In preparazione</Button>
+                  <Button variant="outline" onClick={() => mEntregue.mutate()} disabled={mEntregue.isPending}>Segna come consegnato</Button>
                 </>
               )}
               {p.status === "em_separacao" && (
-                <Button onClick={() => mEntregue.mutate()} disabled={mEntregue.isPending}>Marcar entregue</Button>
+                <Button onClick={() => mEntregue.mutate()} disabled={mEntregue.isPending}>Segna come consegnato</Button>
               )}
             </div>
           </div>
@@ -204,11 +204,11 @@ function PedidoDetalhe() {
 
           {docs.length > 0 && (
             <div className="rounded-lg border border-border bg-card p-4">
-              <h3 className="text-xs uppercase tracking-widest text-muted-foreground">Documento de saída</h3>
+              <h3 className="text-xs uppercase tracking-widest text-muted-foreground">Documento di uscita</h3>
               <div className="mt-2 font-medium">{docs[0].numero}</div>
               <a href={`/api/public/documento/${docs[0].numero}`} target="_blank" rel="noreferrer" className="mt-3 block">
                 <Button variant="outline" size="sm" className="w-full">
-                  <FileText className="mr-2 h-3.5 w-3.5" /> Abrir PDF
+                  <FileText className="mr-2 h-3.5 w-3.5" /> Apri PDF
                 </Button>
               </a>
             </div>
@@ -323,7 +323,7 @@ function EditarPedidoForm({
         },
       }),
     onSuccess: () => {
-      toast.success("Pedido atualizado");
+      toast.success("Ordine aggiornato");
       onSaved();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -331,23 +331,23 @@ function EditarPedidoForm({
 
   return (
     <div className="mt-6 space-y-4 border-t border-border pt-6">
-      <h2 className="text-xs uppercase tracking-widest text-muted-foreground">Editar pedido</h2>
+      <h2 className="text-xs uppercase tracking-widest text-muted-foreground">Modifica ordine</h2>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
-          <Label className="text-xs">Solicitante</Label>
-          <Input value={solicitanteNome} onChange={(e) => setSolicitanteNome(e.target.value)} placeholder="Nome (opcional)" />
+          <Label className="text-xs">Richiedente</Label>
+          <Input value={solicitanteNome} onChange={(e) => setSolicitanteNome(e.target.value)} placeholder="Nome (opzionale)" />
         </div>
       </div>
       <div className="space-y-1">
-        <Label className="text-xs">Observação</Label>
-        <Textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={2} placeholder="Observação (opcional)" />
+        <Label className="text-xs">Nota</Label>
+        <Textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={2} placeholder="Nota (opzionale)" />
       </div>
 
       <div className="space-y-2">
-        <Label className="text-xs">Itens</Label>
+        <Label className="text-xs">Articoli</Label>
         {linhas.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Adicione pelo menos um produto.</p>
+          <p className="text-sm text-muted-foreground">Aggiungi almeno un prodotto.</p>
         ) : (
           <ul className="space-y-3">
             {linhas.map((it) => (
@@ -359,7 +359,7 @@ function EditarPedidoForm({
                   <div className="min-w-0 flex-1">
                     <div className="font-medium">{it.nome}</div>
                     <div className="mt-0.5 text-xs text-muted-foreground">
-                      {currency.format(it.preco)} · máx. {it.estoque_disponivel} {it.unidade}
+                      {currency.format(it.preco)} · max. {it.estoque_disponivel} {it.unidade}
                     </div>
                   </div>
                   <Button
@@ -368,7 +368,7 @@ function EditarPedidoForm({
                     variant="ghost"
                     className="h-9 w-9 shrink-0 text-muted-foreground"
                     onClick={() => remove(it.produto_id)}
-                    aria-label="Remover item"
+                    aria-label="Rimuovi articolo"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -376,7 +376,7 @@ function EditarPedidoForm({
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div className="space-y-1.5">
-                    <span className="text-xs text-muted-foreground">Quantidade</span>
+                    <span className="text-xs text-muted-foreground">Quantità</span>
                     <div className="flex items-center gap-2">
                       <Button
                         type="button"
@@ -384,7 +384,7 @@ function EditarPedidoForm({
                         variant="outline"
                         className="h-9 w-9"
                         onClick={() => setQty(it.produto_id, it.quantidade - 1)}
-                        aria-label="Diminuir quantidade"
+                        aria-label="Diminuisci quantità"
                       >
                         <Minus className="h-3.5 w-3.5" />
                       </Button>
@@ -402,14 +402,14 @@ function EditarPedidoForm({
                         variant="outline"
                         className="h-9 w-9"
                         onClick={() => setQty(it.produto_id, it.quantidade + 1)}
-                        aria-label="Aumentar quantidade"
+                        aria-label="Aumenta quantità"
                       >
                         <Plus className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>
                   <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end sm:justify-end">
-                    <span className="text-xs text-muted-foreground">Subtotal</span>
+                    <span className="text-xs text-muted-foreground">Subtotale</span>
                     <span className="font-medium">{currency.format(it.preco * it.quantidade)}</span>
                   </div>
                 </div>
@@ -420,7 +420,7 @@ function EditarPedidoForm({
         <div className="flex flex-wrap gap-2">
           <Select value={addProdutoId} onValueChange={setAddProdutoId}>
             <SelectTrigger className="w-full sm:w-64">
-              <SelectValue placeholder="Adicionar produto..." />
+              <SelectValue placeholder="Aggiungi prodotto..." />
             </SelectTrigger>
             <SelectContent>
               {produtosParaAdd.map((p) => (
@@ -431,18 +431,18 @@ function EditarPedidoForm({
             </SelectContent>
           </Select>
           <Button type="button" variant="outline" size="sm" disabled={!addProdutoId} onClick={addProduto}>
-            <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar
+            <Plus className="mr-1 h-3.5 w-3.5" /> Aggiungi
           </Button>
         </div>
       </div>
 
       <div className="flex items-center justify-between border-t border-border pt-3">
-        <span className="text-sm text-muted-foreground">Total</span>
+        <span className="text-sm text-muted-foreground">Totale</span>
         <span className="text-lg font-semibold">{currency.format(total)}</span>
       </div>
 
       <Button className="w-full sm:w-auto" disabled={linhas.length === 0 || mut.isPending} onClick={() => mut.mutate()}>
-        {mut.isPending ? "Salvando..." : "Salvar alterações"}
+        {mut.isPending ? "Salvataggio..." : "Salva modifiche"}
       </Button>
     </div>
   );
@@ -473,7 +473,7 @@ function ComprovanteCard({
       return salvar({ data: { id, comprovante_numero: numero || null, imagem } });
     },
     onSuccess: () => {
-      toast.success("Comprovante salvo");
+      toast.success("Ricevuta salvata");
       setFile(null);
       onSaved();
     },
@@ -482,14 +482,14 @@ function ComprovanteCard({
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
-      <h3 className="text-xs uppercase tracking-widest text-muted-foreground">Comprovante (bonifico)</h3>
+      <h3 className="text-xs uppercase tracking-widest text-muted-foreground">Ricevuta (bonifico)</h3>
       <div className="mt-3 space-y-3">
         <div className="space-y-1">
-          <Label className="text-xs">Número do comprovante</Label>
-          <Input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Nº do bonifico" />
+          <Label className="text-xs">Numero della ricevuta</Label>
+          <Input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Nº del bonifico" />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">Imagem do comprovante</Label>
+          <Label className="text-xs">Immagine della ricevuta</Label>
           <Input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         </div>
         {(comprovanteUrl || file) && (
@@ -498,7 +498,7 @@ function ComprovanteCard({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={URL.createObjectURL(file)}
-                alt="Pré-visualização do comprovante"
+                alt="Anteprima della ricevuta"
                 className="max-h-48 w-full rounded-md border border-border object-contain"
               />
             ) : comprovanteUrl ? (
@@ -506,7 +506,7 @@ function ComprovanteCard({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`/api/admin/comprovante/${id}`}
-                  alt="Comprovante de pagamento"
+                  alt="Ricevuta di pagamento"
                   className="max-h-48 w-full rounded-md border border-border object-contain bg-secondary"
                 />
               </a>
@@ -514,14 +514,14 @@ function ComprovanteCard({
             {comprovanteUrl && !file && (
               <p className="text-center text-xs text-muted-foreground">
                 <a href={`/api/admin/comprovante/${id}`} target="_blank" rel="noreferrer" className="underline">
-                  Abrir imagem em nova aba
+                  Apri immagine in una nuova scheda
                 </a>
               </p>
             )}
           </div>
         )}
         <Button className="w-full" size="sm" disabled={mut.isPending} onClick={() => mut.mutate()}>
-          {mut.isPending ? "Salvando..." : "Salvar comprovante"}
+          {mut.isPending ? "Salvataggio..." : "Salva ricevuta"}
         </Button>
       </div>
     </div>

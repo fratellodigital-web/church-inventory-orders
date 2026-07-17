@@ -66,32 +66,32 @@ export function InstallBanner() {
       <div className="mx-auto flex max-w-md items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-lg">
         <img src="/icon-192.png" alt="" className="h-10 w-10 shrink-0 rounded-lg" />
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-medium text-foreground">Instalar o Fundo Bíblico</div>
+          <div className="text-sm font-medium text-foreground">Installa Fondo Biblico</div>
           {isIOS ? (
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Toque em <Share className="inline h-3 w-3" /> Compartilhar e depois em{" "}
-              <span className="font-medium">“Adicionar à Tela de Início”</span>.
+              Tocca <Share className="inline h-3 w-3" /> Condividi e poi{" "}
+              <span className="font-medium">“Aggiungi a Home”</span>.
             </p>
           ) : showHint ? (
             <p className="mt-0.5 text-xs text-muted-foreground">
-              No menu do navegador, escolha{" "}
-              <span className="font-medium">“Instalar app”</span> ou{" "}
-              <span className="font-medium">“Adicionar à tela inicial”</span>.
+              Nel menu del browser, scegli{" "}
+              <span className="font-medium">“Installa app”</span> oppure{" "}
+              <span className="font-medium">“Aggiungi alla schermata Home”</span>.
             </p>
           ) : (
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Acesse mais rápido instalando o app no seu dispositivo.
+              Accedi più velocemente installando l&apos;app sul dispositivo.
             </p>
           )}
         </div>
         {!isIOS && (
           <Button size="sm" onClick={install}>
-            <Download className="mr-1 h-3.5 w-3.5" /> Instalar
+            <Download className="mr-1 h-3.5 w-3.5" /> Installa
           </Button>
         )}
         <button
           onClick={dismiss}
-          aria-label="Fechar"
+          aria-label="Chiudi"
           className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-foreground transition hover:bg-secondary hover:text-foreground"
         >
           <X className="h-4 w-4" />

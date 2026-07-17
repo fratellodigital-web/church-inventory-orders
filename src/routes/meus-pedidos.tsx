@@ -10,7 +10,7 @@ import { ChevronRight, RefreshCw, ClipboardList } from "lucide-react";
 import { SharePedidoButton } from "@/components/SharePedidoButton";
 
 export const Route = createFileRoute("/meus-pedidos")({
-  head: () => ({ meta: [{ title: "Pedidos — Fundo Bíblico" }] }),
+  head: () => ({ meta: [{ title: "Ordini — Fondo Biblico" }] }),
   component: MeusPedidosPage,
 });
 
@@ -33,16 +33,16 @@ function MeusPedidosPage() {
       <AppHeader
         rightSlot={
           <Link to="/catalogo">
-            <Button variant="outline" size="sm">Novo pedido</Button>
+            <Button variant="outline" size="sm">Nuovo ordine</Button>
           </Link>
         }
       />
       <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
         <div className="mb-6 flex items-end justify-between gap-3">
           <div>
-            <h1 className="font-display text-3xl text-foreground sm:text-4xl">Pedidos</h1>
+            <h1 className="font-display text-3xl text-foreground sm:text-4xl">Ordini</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {igreja?.nome} · o status é atualizado pela administração
+              {igreja?.nome} · lo stato viene aggiornato dall&apos;amministrazione
             </p>
           </div>
           <Button
@@ -50,10 +50,10 @@ function MeusPedidosPage() {
             size="sm"
             onClick={() => refetch()}
             disabled={isFetching}
-            title="Atualizar"
+            title="Aggiorna"
           >
             <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-            <span className="ml-1 hidden sm:inline">Atualizar</span>
+            <span className="ml-1 hidden sm:inline">Aggiorna</span>
           </Button>
         </div>
 
@@ -66,9 +66,9 @@ function MeusPedidosPage() {
         ) : !data || data.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border py-16 text-center">
             <ClipboardList className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="mt-3 text-sm text-muted-foreground">Nenhum pedido ainda.</p>
+            <p className="mt-3 text-sm text-muted-foreground">Nessun ordine ancora.</p>
             <Link to="/catalogo" className="mt-4 inline-block">
-              <Button size="sm">Fazer um pedido</Button>
+              <Button size="sm">Effettua un ordine</Button>
             </Link>
           </div>
         ) : (
@@ -89,8 +89,8 @@ function MeusPedidosPage() {
                       <StatusBadge status={p.status} />
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      {new Date(p.created_at).toLocaleString("pt-BR")} · {p.total_itens}{" "}
-                      {p.total_itens === 1 ? "item" : "itens"}
+                      {new Date(p.created_at).toLocaleString("it-IT")} · {p.total_itens}{" "}
+                      {p.total_itens === 1 ? "articolo" : "articoli"}
                     </div>
                   </div>
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />

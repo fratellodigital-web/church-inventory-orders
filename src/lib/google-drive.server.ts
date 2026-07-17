@@ -34,10 +34,10 @@ function folderAccessHelp(): string {
   const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID ?? "";
   const email = getServiceAccountEmail();
   return (
-    `Pasta do Drive inacessível (ID: ${folderId}). ` +
-    `Service accounts não têm armazenamento próprio — compartilhe SUA pasta com ${email} como Editor, ` +
-    `ou use um Shared Drive (Google Workspace) e adicione a service account como membro. ` +
-    `Ver GOOGLE_DRIVE_SETUP.md`
+    `Cartella Drive non accessibile (ID: ${folderId}). ` +
+    `Le service account non hanno spazio di archiviazione proprio — condividi LA TUA cartella con ${email} come Editor, ` +
+    `oppure usa un Shared Drive (Google Workspace) e aggiungi la service account come membro. ` +
+    `Vedi GOOGLE_DRIVE_SETUP.md`
   );
 }
 
@@ -45,14 +45,14 @@ function wrapDriveError(e: unknown): Error {
   const msg = e instanceof Error ? e.message : String(e);
   if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|ENETUNREACH|fetch failed/i.test(msg)) {
     return new Error(
-      "Sem conexão com o Google Drive. Verifique internet/VPN e teste: node scripts/test-google-drive.mjs",
+      "Nessuna connessione a Google Drive. Verifica internet/VPN e prova: node scripts/test-google-drive.mjs",
     );
   }
   if (/storage quota|do not have storage quota/i.test(msg)) {
     return new Error(
-      "Service accounts não têm espaço próprio no Drive. " +
-        "Compartilhe uma pasta sua com a service account como Editor " +
-        "(os arquivos usam a sua cota), ou configure um Shared Drive. Ver GOOGLE_DRIVE_SETUP.md",
+      "Le service account non hanno spazio proprio su Drive. " +
+        "Condividi una tua cartella con la service account come Editor " +
+        "(i file usano la tua quota), oppure configura un Shared Drive. Vedi GOOGLE_DRIVE_SETUP.md",
     );
   }
   if (/File not found|not found/i.test(msg)) {
@@ -64,12 +64,12 @@ function wrapDriveError(e: unknown): Error {
 function readCredentialsFile(filePath: string): Record<string, unknown> {
   const resolved = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
   if (!fs.existsSync(resolved)) {
-    throw new Error(`Arquivo de credenciais não encontrado: ${resolved}`);
+    throw new Error(`File delle credenziali non trovato: ${resolved}`);
   }
   try {
     return JSON.parse(fs.readFileSync(resolved, "utf8")) as Record<string, unknown>;
   } catch {
-    throw new Error(`GOOGLE_APPLICATION_CREDENTIALS aponta para JSON inválido: ${resolved}`);
+    throw new Error(`GOOGLE_APPLICATION_CREDENTIALS punta a un JSON non valido: ${resolved}`);
   }
 }
 
@@ -82,11 +82,11 @@ function getCredentials(): Record<string, unknown> {
     try {
       return JSON.parse(json) as Record<string, unknown>;
     } catch {
-      throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON inválido.");
+      throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON non valido.");
     }
   }
 
-  throw new Error("Credenciais Google ausentes. Ver GOOGLE_DRIVE_SETUP.md");
+  throw new Error("Credenziali Google mancanti. Vedi GOOGLE_DRIVE_SETUP.md");
 }
 
 let _drive: drive_v3.Drive | null = null;
@@ -157,7 +157,7 @@ async function resolveRootFolderId(): Promise<string> {
 
   const configured = process.env.GOOGLE_DRIVE_FOLDER_ID?.trim();
   if (!configured) {
-    throw new Error("Missing GOOGLE_DRIVE_FOLDER_ID. Ver GOOGLE_DRIVE_SETUP.md");
+    throw new Error("Manca GOOGLE_DRIVE_FOLDER_ID. Vedi GOOGLE_DRIVE_SETUP.md");
   }
 
   if (!(await canWriteToFolder(configured))) {
