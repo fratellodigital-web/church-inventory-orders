@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   adminListarPedidos,
+  adminAprovarPedido,
   adminMarcarPago,
   adminMudarStatus,
   adminCancelarPedido,
@@ -35,6 +36,7 @@ type Pedido = {
 const FILTROS = [
   { label: "Tutti", value: "" },
   { label: "In attesa", value: "pendente" },
+  { label: "Approvati", value: "aprovado" },
   { label: "Pagati", value: "pago" },
   { label: "In preparazione", value: "em_separacao" },
   { label: "Consegnati", value: "entregue" },
@@ -43,6 +45,7 @@ const FILTROS = [
 
 const STATUS_LABEL: Record<string, string> = {
   pendente: "In attesa",
+  aprovado: "Approvato",
   pago: "Pagato",
   em_separacao: "In preparazione",
   entregue: "Consegnato",
@@ -50,11 +53,12 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 // Colunas do kanban (ordem do fluxo).
-const COLUNAS = ["pendente", "pago", "em_separacao", "entregue", "cancelado"] as const;
+const COLUNAS = ["pendente", "aprovado", "pago", "em_separacao", "entregue", "cancelado"] as const;
 
 // Próximas transições permitidas para cada status.
 const TRANSICOES: Record<string, string[]> = {
-  pendente: ["pago", "cancelado"],
+  pendente: ["aprovado", "cancelado"],
+  aprovado: ["pago", "cancelado"],
   pago: ["em_separacao", "entregue", "cancelado"],
   em_separacao: ["entregue", "cancelado"],
   entregue: [],
@@ -119,6 +123,7 @@ function PedidosPage() {
 
 function KanbanBoard({ pedidos }: { pedidos: Pedido[] }) {
   const qc = useQueryClient();
+  const aprovar = useServerFn(adminAprovarPedido);
   const pagar = useServerFn(adminMarcarPago);
   const mudar = useServerFn(adminMudarStatus);
   const cancelar = useServerFn(adminCancelarPedido);
@@ -127,6 +132,10 @@ function KanbanBoard({ pedidos }: { pedidos: Pedido[] }) {
 
   const mut = useMutation({
     mutationFn: async ({ id, target }: { id: string; target: string }) => {
+      if (target === "aprovado") {
+        await aprovar({ data: { id } });
+        return "Ordine approvato";
+      }
       if (target === "pago") {
         const r = await pagar({ data: { id } });
         return `Pagato. Documento ${r.documento_numero} generato.`;
@@ -334,6 +343,7 @@ function StatusSelect({
   fullWidth?: boolean;
 }) {
   const qc = useQueryClient();
+  const aprovar = useServerFn(adminAprovarPedido);
   const pagar = useServerFn(adminMarcarPago);
   const mudar = useServerFn(adminMudarStatus);
   const cancelar = useServerFn(adminCancelarPedido);
@@ -345,6 +355,10 @@ function StatusSelect({
 
   const mut = useMutation({
     mutationFn: async (novo: string) => {
+      if (novo === "aprovado") {
+        await aprovar({ data: { id } });
+        return { msg: `${numero}: approvato` };
+      }
       if (novo === "pago") {
         const r = await pagar({ data: { id } });
         return { msg: `Pagato. Documento ${r.documento_numero} generato.` };

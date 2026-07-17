@@ -163,14 +163,25 @@ export const buscarPedido = createServerFn({ method: "GET" })
   .inputValidator((d: { numero: string }) => ({ numero: String(d.numero) }))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { pedidoMostraPreco } = await import("./pedido-status");
     const { data: pedido, error } = await supabaseAdmin
       .from("pedidos")
       .select(
-        "id, numero, status, observacao, solicitante_nome, created_at, pago_em, entregue_em, igrejas(nome, cidade), pedido_itens(quantidade, snapshot_nome, snapshot_unidade), documentos_saida(numero)",
+        "id, numero, status, observacao, solicitante_nome, created_at, pago_em, entregue_em, igrejas(nome, cidade), pedido_itens(quantidade, snapshot_nome, snapshot_unidade, snapshot_preco), documentos_saida(numero)",
       )
       .eq("numero", data.numero)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!pedido) return null;
-    return pedido;
+
+    if (!pedidoMostraPreco(pedido.status)) {
+      return { ...pedido, total_valor: null };
+    }
+
+    const itens = (pedido.pedido_itens ?? []) as { quantidade: number; snapshot_preco: number | null }[];
+    const total_valor = itens.reduce(
+      (s, it) => s + Number(it.snapshot_preco ?? 0) * it.quantidade,
+      0,
+    );
+    return { ...pedido, total_valor };
   });

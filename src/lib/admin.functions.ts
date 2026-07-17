@@ -93,7 +93,7 @@ export const adminGetPedido = createServerFn({ method: "GET" })
     const { data: pedido, error } = await sb
       .from("pedidos")
       .select(
-        "id, numero, status, observacao, solicitante_nome, created_at, pago_em, entregue_em, comprovante_url, comprovante_drive_file_id, comprovante_numero, igrejas(nome, cidade, responsavel, telefone), pedido_itens(id, produto_id, quantidade, snapshot_nome, snapshot_unidade), documentos_saida(numero, created_at)",
+        "id, numero, status, observacao, solicitante_nome, created_at, aprovado_em, pago_em, entregue_em, comprovante_url, comprovante_drive_file_id, comprovante_numero, igrejas(nome, cidade, responsavel, telefone), pedido_itens(id, produto_id, quantidade, snapshot_nome, snapshot_unidade, snapshot_preco), documentos_saida(numero, created_at)",
       )
       .eq("id", data.id)
       .maybeSingle();
@@ -275,6 +275,43 @@ export const adminEditarPedido = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const adminAprovarPedido = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string }) => ({ id: z.string().uuid().parse(d.id) }))
+  .handler(async ({ data }) => {
+    const sb = await admin();
+    const { data: pedido, error: pErr } = await sb
+      .from("pedidos")
+      .select("id, numero, status, pedido_itens(id, produto_id, quantidade)")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (pErr) throw new Error(pErr.message);
+    if (!pedido) throw new Error("Ordine non trovato");
+    if (pedido.status !== "pendente") throw new Error("L'ordine non è in attesa");
+
+    const ids = pedido.pedido_itens.map((i) => i.produto_id);
+    const { data: prods, error: prodErr } = await sb.from("produtos").select("id, preco").in("id", ids);
+    if (prodErr) throw new Error(prodErr.message);
+    const pm = new Map((prods ?? []).map((p) => [p.id, p]));
+
+    for (const it of pedido.pedido_itens) {
+      const p = pm.get(it.produto_id);
+      if (!p) throw new Error("Prodotto non trovato");
+      const { error: uErr } = await sb
+        .from("pedido_itens")
+        .update({ snapshot_preco: p.preco })
+        .eq("id", it.id);
+      if (uErr) throw new Error(uErr.message);
+    }
+
+    const { error: upErr } = await sb
+      .from("pedidos")
+      .update({ status: "aprovado", aprovado_em: new Date().toISOString() })
+      .eq("id", pedido.id);
+    if (upErr) throw new Error(upErr.message);
+
+    return { ok: true };
+  });
+
 export const adminMarcarPago = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string }) => ({ id: z.string().uuid().parse(d.id) }))
   .handler(async ({ data }) => {
@@ -286,7 +323,7 @@ export const adminMarcarPago = createServerFn({ method: "POST" })
       .maybeSingle();
     if (pErr) throw new Error(pErr.message);
     if (!pedido) throw new Error("Ordine non trovato");
-    if (pedido.status !== "pendente") throw new Error("L'ordine non è in attesa");
+    if (pedido.status !== "aprovado") throw new Error("L'ordine non è approvato");
 
     // checa estoque físico antes de abater
     const ids = pedido.pedido_itens.map((i) => i.produto_id);
@@ -381,8 +418,8 @@ export const adminCancelarPedido = createServerFn({ method: "POST" })
     if (pedido.status === "cancelado") throw new Error("Già annullato");
     if (pedido.status === "entregue") throw new Error("Ordine già consegnato, non può essere annullato");
 
-    // se ainda estava pendente, estorna a reserva
-    if (pedido.status === "pendente") {
+    // se ainda estava pendente ou aprovado, estorna a reserva
+    if (pedido.status === "pendente" || pedido.status === "aprovado") {
       const ids = pedido.pedido_itens.map((i) => i.produto_id);
       const { data: prods } = await sb.from("produtos").select("id, estoque_disponivel").in("id", ids);
       const pm = new Map((prods ?? []).map((p) => [p.id, p]));

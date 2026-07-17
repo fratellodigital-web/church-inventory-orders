@@ -1,5 +1,6 @@
 const labels: Record<string, { text: string; cls: string }> = {
   pendente: { text: "In attesa", cls: "bg-secondary text-secondary-foreground" },
+  aprovado: { text: "Approvato", cls: "bg-primary text-primary-foreground" },
   pago: { text: "Pagato", cls: "bg-foreground text-background" },
   em_separacao: { text: "In preparazione", cls: "bg-accent text-accent-foreground" },
   entregue: { text: "Consegnato", cls: "bg-foreground text-background" },

@@ -101,9 +101,6 @@ function CatalogoPage() {
                   <div className="mt-3 flex items-center justify-between">
                     <div>
                       <div className="text-sm font-semibold text-foreground">{formatPreco(p.preco)}</div>
-                      <span className="text-xs text-muted-foreground">
-                        {p.estoque_disponivel} {p.unidade} disp.
-                      </span>
                     </div>
                     <Button
                       size="sm"
@@ -134,7 +131,7 @@ function CatalogoPage() {
 
 function CartButton({ total }: { total: number }) {
   const [open, setOpen] = useState(false);
-  const { items, setQty, remove, clear, totalValor } = useCart();
+  const { items, setQty, remove, clear } = useCart();
   const { igreja } = useIgrejaSelecionada();
   const [solicitante, setSolicitante] = useState("");
   const [obs, setObs] = useState("");
@@ -186,7 +183,7 @@ function CartButton({ total }: { total: number }) {
                   <div className="flex-1">
                     <div className="text-sm font-medium text-foreground">{it.nome}</div>
                     <div className="text-xs text-muted-foreground">
-                      {formatPreco(it.preco)} × {it.quantidade} = {formatPreco(it.preco * it.quantidade)}
+                      {it.quantidade} {it.unidade}
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -218,12 +215,6 @@ function CartButton({ total }: { total: number }) {
           )}
         </div>
         <SheetFooter className="flex-col gap-3 border-t border-border pt-4">
-          {items.length > 0 && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Totale</span>
-              <span className="text-lg font-semibold text-foreground">{formatPreco(totalValor)}</span>
-            </div>
-          )}
           <Button className="w-full" disabled={items.length === 0 || mut.isPending} onClick={() => mut.mutate()}>
             {mut.isPending ? "Invio in corso..." : "Invia ordine"}
           </Button>

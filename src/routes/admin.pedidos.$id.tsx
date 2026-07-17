@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useMemo } from "react";
 import {
   adminGetPedido,
+  adminAprovarPedido,
   adminMarcarPago,
   adminMudarStatus,
   adminCancelarPedido,
@@ -11,6 +12,7 @@ import {
   adminEditarPedido,
   adminListarProdutos,
 } from "@/lib/admin.functions";
+import { pedidoMostraPreco } from "@/lib/pedido-status";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +46,7 @@ function PedidoDetalhe() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
   const fetcher = useServerFn(adminGetPedido);
+  const aprovar = useServerFn(adminAprovarPedido);
   const pagar = useServerFn(adminMarcarPago);
   const mudar = useServerFn(adminMudarStatus);
   const cancelar = useServerFn(adminCancelarPedido);
@@ -53,6 +56,15 @@ function PedidoDetalhe() {
     qc.invalidateQueries({ queryKey: ["admin-pedido", id] });
     qc.invalidateQueries({ queryKey: ["admin-pedidos"] });
   };
+
+  const mAprovar = useMutation({
+    mutationFn: () => aprovar({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Ordine approvato");
+      refresh();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const mPagar = useMutation({
     mutationFn: () => pagar({ data: { id } }),
@@ -91,9 +103,16 @@ function PedidoDetalhe() {
     quantidade: number;
     snapshot_nome: string;
     snapshot_unidade: string;
+    snapshot_preco: number | null;
   }[];
   const docs = (p.documentos_saida ?? []) as { numero: string }[];
   const isPendente = p.status === "pendente";
+  const isAprovado = p.status === "aprovado";
+  const mostraPreco = pedidoMostraPreco(p.status);
+  const currency = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
+  const totalValor = mostraPreco
+    ? itens.reduce((s, it) => s + Number(it.snapshot_preco ?? 0) * it.quantidade, 0)
+    : 0;
 
   return (
     <div>
@@ -164,6 +183,13 @@ function PedidoDetalhe() {
                   <p className="mt-1 whitespace-pre-wrap text-sm">{p.observacao}</p>
                 </>
               )}
+
+              {mostraPreco && (
+                <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
+                  <span className="text-sm text-muted-foreground">Totale</span>
+                  <span className="text-lg font-semibold">{currency.format(totalValor)}</span>
+                </div>
+              )}
             </>
           )}
         </article>
@@ -174,6 +200,16 @@ function PedidoDetalhe() {
             <div className="mt-3 flex flex-col gap-2">
               <SharePedidoButton numero={p.numero} igrejaNome={igreja?.nome} className="w-full" />
               {p.status === "pendente" && (
+                <>
+                  <Button onClick={() => mAprovar.mutate()} disabled={mAprovar.isPending}>
+                    {mAprovar.isPending ? "Elaborazione..." : "Approva ordine"}
+                  </Button>
+                  <Button variant="outline" onClick={() => mCancelar.mutate()} disabled={mCancelar.isPending}>
+                    Annulla ordine
+                  </Button>
+                </>
+              )}
+              {isAprovado && (
                 <>
                   <Button onClick={() => mPagar.mutate()} disabled={mPagar.isPending}>
                     {mPagar.isPending ? "Elaborazione..." : "Segna come pagato"}

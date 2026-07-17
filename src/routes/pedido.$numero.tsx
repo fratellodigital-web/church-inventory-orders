@@ -70,6 +70,15 @@ function PedidoPage() {
               ))}
             </ul>
 
+            {"total_valor" in pedido && pedido.total_valor != null && (
+              <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+                <span className="text-sm text-muted-foreground">Totale</span>
+                <span className="text-lg font-semibold text-foreground">
+                  {new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(pedido.total_valor)}
+                </span>
+              </div>
+            )}
+
             {pedido.observacao && (
               <>
                 <h2 className="mt-6 text-xs uppercase tracking-widest text-muted-foreground">Nota</h2>
