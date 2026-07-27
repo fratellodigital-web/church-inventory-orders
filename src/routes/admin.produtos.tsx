@@ -22,7 +22,7 @@ function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve((reader.result as string).split(",")[1] ?? "");
-    reader.onerror = () => reject(new Error("Falha ao ler a imagem"));
+    reader.onerror = () => reject(new Error("Impossibile leggere l'immagine"));
     reader.readAsDataURL(file);
   });
 }
@@ -61,10 +61,10 @@ function ProdutosPage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="font-display text-3xl">Produtos</h1>
+        <h1 className="font-display text-3xl">Prodotti</h1>
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEdit(null); }}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEdit(null)}><Plus className="mr-1 h-4 w-4" /> Novo</Button>
+            <Button onClick={() => setEdit(null)}><Plus className="mr-1 h-4 w-4" /> Nuovo</Button>
           </DialogTrigger>
           <ProdutoDialog produto={edit} categorias={categorias ?? []} onClose={() => setOpen(false)} />
         </Dialog>
@@ -77,14 +77,14 @@ function ProdutosPage() {
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-secondary text-left text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="px-4 py-2">Código</th>
+                <th className="px-4 py-2">Codice</th>
                 <th className="px-4 py-2">Nome</th>
                 <th className="px-4 py-2">Categoria</th>
-                <th className="px-4 py-2 text-right">Preço</th>
-                <th className="px-4 py-2 text-right">Físico</th>
-                <th className="px-4 py-2 text-right">Disponível</th>
-                <th className="px-4 py-2 text-right">Mín.</th>
-                <th className="px-4 py-2">Status</th>
+                <th className="px-4 py-2 text-right">Prezzo</th>
+                <th className="px-4 py-2 text-right">Fisico</th>
+                <th className="px-4 py-2 text-right">disp.</th>
+                <th className="px-4 py-2 text-right">Min.</th>
+                <th className="px-4 py-2">Stato</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -100,9 +100,9 @@ function ProdutosPage() {
                     <td className={`px-4 py-2 text-right ${low ? "text-destructive font-medium" : ""}`}>{p.estoque_fisico} {p.unidade}</td>
                     <td className="px-4 py-2 text-right">{p.estoque_disponivel}</td>
                     <td className="px-4 py-2 text-right text-muted-foreground">{p.estoque_minimo}</td>
-                    <td className="px-4 py-2 text-xs">{p.ativo ? "Ativo" : "Inativo"}</td>
+                    <td className="px-4 py-2 text-xs">{p.ativo ? "Attivo" : "Inattivo"}</td>
                     <td className="px-4 py-2 text-right">
-                      <Button size="sm" variant="outline" onClick={() => { setEdit(p as Produto); setOpen(true); }}>Editar</Button>
+                      <Button size="sm" variant="outline" onClick={() => { setEdit(p as Produto); setOpen(true); }}>Modifica</Button>
                     </td>
                   </tr>
                 );
@@ -164,7 +164,7 @@ function ProdutoDialog({
       });
     },
     onSuccess: () => {
-      toast.success("Produto salvo");
+      toast.success("Prodotto salvato");
       qc.invalidateQueries({ queryKey: ["admin-produtos"] });
       onClose();
     },
@@ -174,7 +174,7 @@ function ProdutoDialog({
   const mCat = useMutation({
     mutationFn: () => criarCat({ data: { nome: novaCat } }),
     onSuccess: (c) => {
-      toast.success("Categoria criada");
+      toast.success("Categoria creata");
       setForm((f) => ({ ...f, categoria_id: c.id }));
       setNovaCat("");
       qc.invalidateQueries({ queryKey: ["admin-categorias"] });
@@ -185,7 +185,7 @@ function ProdutoDialog({
   return (
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>{produto ? "Editar produto" : "Novo produto"}</DialogTitle>
+        <DialogTitle>{produto ? "Modifica prodotto" : "Nuovo prodotto"}</DialogTitle>
       </DialogHeader>
       <form
         className="space-y-3"
@@ -193,7 +193,7 @@ function ProdutoDialog({
       >
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <Label>Código</Label>
+            <Label>Codice</Label>
             <Input value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} placeholder="Ex.: B-3ITA" />
           </div>
           <div className="col-span-2">
@@ -202,11 +202,11 @@ function ProdutoDialog({
           </div>
         </div>
         <div>
-          <Label>Descrição</Label>
+          <Label>Descrizione</Label>
           <Textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={2} />
         </div>
         <div>
-          <Label>Foto do produto</Label>
+          <Label>Foto del prodotto</Label>
           <div className="mt-2 flex items-start gap-3">
             {fotoPreview ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -224,53 +224,53 @@ function ProdutoDialog({
                   const file = e.target.files?.[0];
                   if (!file) return;
                   if (file.size > 5 * 1024 * 1024) {
-                    toast.error("Imagem maior que 5 MB");
+                    toast.error("Immagine più grande di 5 MB");
                     return;
                   }
                   setFotoFile(file);
                   setFotoPreview(URL.createObjectURL(file));
                 }}
               />
-              <p className="mt-1 text-xs text-muted-foreground">PNG, JPG ou WebP. Máx. 5 MB. Salvo no Google Drive.</p>
+              <p className="mt-1 text-xs text-muted-foreground">PNG, JPG o WebP. Max. 5 MB. Salvato su Google Drive.</p>
             </div>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <Label>Unidade</Label>
+            <Label>Unità</Label>
             <Input value={form.unidade} onChange={(e) => setForm({ ...form, unidade: e.target.value })} />
           </div>
           <div>
-            <Label>Preço (€)</Label>
+            <Label>Prezzo (€)</Label>
             <Input type="number" step="0.01" min="0" value={form.preco} onChange={(e) => setForm({ ...form, preco: Number(e.target.value) })} />
           </div>
           <div>
-            <Label>Estoque mínimo</Label>
+            <Label>Magazzino minimo</Label>
             <Input type="number" value={form.estoque_minimo} onChange={(e) => setForm({ ...form, estoque_minimo: Number(e.target.value) })} />
           </div>
         </div>
         <div>
           <Label>Categoria</Label>
           <Select value={form.categoria_id} onValueChange={(v) => setForm({ ...form, categoria_id: v })}>
-            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Seleziona" /></SelectTrigger>
             <SelectContent>
               {categorias.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
             </SelectContent>
           </Select>
           <div className="mt-2 flex gap-2">
-            <Input placeholder="Nova categoria" value={novaCat} onChange={(e) => setNovaCat(e.target.value)} />
-            <Button type="button" variant="outline" disabled={!novaCat || mCat.isPending} onClick={() => mCat.mutate()}>Adicionar</Button>
+            <Input placeholder="Nuova categoria" value={novaCat} onChange={(e) => setNovaCat(e.target.value)} />
+            <Button type="button" variant="outline" disabled={!novaCat || mCat.isPending} onClick={() => mCat.mutate()}>Aggiungi</Button>
           </div>
         </div>
         <div className="flex items-center justify-between rounded-md border border-border p-3">
           <div>
-            <Label>Ativo</Label>
-            <p className="text-xs text-muted-foreground">Quando inativo, não aparece no catálogo.</p>
+            <Label>Attivo</Label>
+            <p className="text-xs text-muted-foreground">Se inattivo, non compare nel catalogo.</p>
           </div>
           <Switch checked={form.ativo} onCheckedChange={(v) => setForm({ ...form, ativo: v })} />
         </div>
         <DialogFooter>
-          <Button type="submit" disabled={mut.isPending}>{mut.isPending ? "Salvando..." : "Salvar"}</Button>
+          <Button type="submit" disabled={mut.isPending}>{mut.isPending ? "Salvataggio..." : "Salva"}</Button>
         </DialogFooter>
       </form>
     </DialogContent>

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   adminListarPedidos,
+  adminAprovarPedido,
   adminMarcarPago,
   adminMudarStatus,
   adminCancelarPedido,
@@ -33,28 +34,31 @@ type Pedido = {
 };
 
 const FILTROS = [
-  { label: "Todos", value: "" },
-  { label: "Pendentes", value: "pendente" },
-  { label: "Pagos", value: "pago" },
-  { label: "Em separação", value: "em_separacao" },
-  { label: "Entregues", value: "entregue" },
-  { label: "Cancelados", value: "cancelado" },
+  { label: "Tutti", value: "" },
+  { label: "In attesa", value: "pendente" },
+  { label: "Approvati", value: "aprovado" },
+  { label: "Pagati", value: "pago" },
+  { label: "In preparazione", value: "em_separacao" },
+  { label: "Consegnati", value: "entregue" },
+  { label: "Annullati", value: "cancelado" },
 ];
 
 const STATUS_LABEL: Record<string, string> = {
-  pendente: "Pendente",
-  pago: "Pago",
-  em_separacao: "Em separação",
-  entregue: "Entregue",
-  cancelado: "Cancelado",
+  pendente: "In attesa",
+  aprovado: "Approvato",
+  pago: "Pagato",
+  em_separacao: "In preparazione",
+  entregue: "Consegnato",
+  cancelado: "Annullato",
 };
 
 // Colunas do kanban (ordem do fluxo).
-const COLUNAS = ["pendente", "pago", "em_separacao", "entregue", "cancelado"] as const;
+const COLUNAS = ["pendente", "aprovado", "pago", "em_separacao", "entregue", "cancelado"] as const;
 
 // Próximas transições permitidas para cada status.
 const TRANSICOES: Record<string, string[]> = {
-  pendente: ["pago", "cancelado"],
+  pendente: ["aprovado", "cancelado"],
+  aprovado: ["pago", "cancelado"],
   pago: ["em_separacao", "entregue", "cancelado"],
   em_separacao: ["entregue", "cancelado"],
   entregue: [],
@@ -73,30 +77,41 @@ function PedidosPage() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="font-display text-3xl">Pedidos</h1>
+      <div className="mb-4 flex flex-col gap-3">
+        <h1 className="font-display text-3xl">Ordini</h1>
         {!isDesktop && (
-          <div className="flex flex-wrap gap-1">
-            {FILTROS.map((f) => (
-              <Button
-                key={f.value}
-                size="sm"
-                variant={status === f.value ? "default" : "outline"}
-                onClick={() => setStatus(f.value)}
-              >
-                {f.label}
-              </Button>
-            ))}
+          <div className="-mx-4 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
+            <div className="flex w-max flex-nowrap gap-1.5 pb-1">
+              {FILTROS.map((f) => (
+                <Button
+                  key={f.value}
+                  size="sm"
+                  variant={status === f.value ? "default" : "outline"}
+                  className="shrink-0"
+                  onClick={() => setStatus(f.value)}
+                >
+                  {f.label}
+                </Button>
+              ))}
+            </div>
           </div>
         )}
       </div>
 
       {isLoading ? (
-        <div className="h-60 animate-pulse rounded-lg bg-muted" />
+        isDesktop ? (
+          <div className="h-60 animate-pulse rounded-lg bg-muted" />
+        ) : (
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-28 animate-pulse rounded-lg bg-muted" />
+            ))}
+          </div>
+        )
       ) : isDesktop ? (
         <KanbanBoard pedidos={(data ?? []) as Pedido[]} />
       ) : !data || data.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">Nenhum pedido.</p>
+        <p className="py-10 text-center text-sm text-muted-foreground">Nessun ordine.</p>
       ) : (
         <ListaMobile pedidos={data as Pedido[]} />
       )}
@@ -108,6 +123,7 @@ function PedidosPage() {
 
 function KanbanBoard({ pedidos }: { pedidos: Pedido[] }) {
   const qc = useQueryClient();
+  const aprovar = useServerFn(adminAprovarPedido);
   const pagar = useServerFn(adminMarcarPago);
   const mudar = useServerFn(adminMudarStatus);
   const cancelar = useServerFn(adminCancelarPedido);
@@ -116,19 +132,23 @@ function KanbanBoard({ pedidos }: { pedidos: Pedido[] }) {
 
   const mut = useMutation({
     mutationFn: async ({ id, target }: { id: string; target: string }) => {
+      if (target === "aprovado") {
+        await aprovar({ data: { id } });
+        return "Ordine approvato";
+      }
       if (target === "pago") {
         const r = await pagar({ data: { id } });
-        return `Pago. Documento ${r.documento_numero} gerado.`;
+        return `Pagato. Documento ${r.documento_numero} generato.`;
       }
       if (target === "em_separacao" || target === "entregue") {
         await mudar({ data: { id, status: target } });
-        return `Movido para ${STATUS_LABEL[target]}`;
+        return `Spostato a ${STATUS_LABEL[target]}`;
       }
       if (target === "cancelado") {
         await cancelar({ data: { id } });
-        return "Pedido cancelado";
+        return "Ordine annullato";
       }
-      throw new Error("Transição inválida");
+      throw new Error("Transizione non valida");
     },
     onSuccess: (msg) => {
       toast.success(msg);
@@ -150,7 +170,7 @@ function KanbanBoard({ pedidos }: { pedidos: Pedido[] }) {
     const pedido = pedidos.find((p) => p.id === id);
     if (!pedido || pedido.status === target) return;
     if (!(TRANSICOES[pedido.status] ?? []).includes(target)) {
-      toast.error(`Não é possível mover de ${STATUS_LABEL[pedido.status]} para ${STATUS_LABEL[target]}`);
+      toast.error(`Non è possibile spostare da ${STATUS_LABEL[pedido.status]} a ${STATUS_LABEL[target]}`);
       return;
     }
     mut.mutate({ id, target });
@@ -251,14 +271,14 @@ function KanbanCard({
           />
           <Link to="/admin/pedidos/$id" params={{ id: pedido.id }} onClick={(e) => e.stopPropagation()}>
             <Button size="sm" variant="ghost" className="h-6 px-2 text-xs">
-              Abrir
+              Apri
             </Button>
           </Link>
         </div>
       </div>
       <div className="mt-1 truncate text-xs text-muted-foreground">{pedido.igrejas?.nome ?? "—"}</div>
       <div className="mt-0.5 text-[11px] text-muted-foreground">
-        {new Date(pedido.created_at).toLocaleString("pt-BR")}
+        {new Date(pedido.created_at).toLocaleString("it-IT")}
       </div>
     </div>
   );
@@ -268,52 +288,62 @@ function KanbanCard({
 
 function ListaMobile({ pedidos }: { pedidos: Pedido[] }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
-      <table className="w-full text-sm">
-        <thead className="border-b border-border bg-secondary text-left text-xs uppercase tracking-wider text-muted-foreground">
-          <tr>
-            <th className="px-4 py-2">Número</th>
-            <th className="px-4 py-2">Igreja</th>
-            <th className="px-4 py-2">Data</th>
-            <th className="px-4 py-2">Status</th>
-            <th className="px-4 py-2"></th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {pedidos.map((p) => (
-            <tr key={p.id} className="hover:bg-secondary/50">
-              <td className="px-4 py-3 font-medium">{p.numero}</td>
-              <td className="px-4 py-3 text-muted-foreground">{p.igrejas?.nome ?? "—"}</td>
-              <td className="px-4 py-3 text-muted-foreground">
-                {new Date(p.created_at).toLocaleString("pt-BR")}
-              </td>
-              <td className="px-4 py-3">
-                <StatusSelect id={p.id} numero={p.numero} status={p.status} />
-              </td>
-              <td className="px-4 py-3 text-right">
-                <div className="flex items-center justify-end gap-1">
-                  <SharePedidoButton
-                    numero={p.numero}
-                    igrejaNome={p.igrejas?.nome}
-                    variant="ghost"
-                    size="icon"
-                    showLabel={false}
-                  />
-                  <Link to="/admin/pedidos/$id" params={{ id: p.id }}>
-                    <Button size="sm" variant="outline">Abrir</Button>
-                  </Link>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <ul className="space-y-3">
+      {pedidos.map((p) => (
+        <li
+          key={p.id}
+          className="rounded-lg border border-border bg-card p-4"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-2">
+                <span className="font-semibold text-foreground">{p.numero}</span>
+                <span className="truncate text-sm text-muted-foreground">
+                  {p.igrejas?.nome ?? "—"}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {new Date(p.created_at).toLocaleString("it-IT")}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <SharePedidoButton
+                numero={p.numero}
+                igrejaNome={p.igrejas?.nome}
+                variant="ghost"
+                size="icon"
+                showLabel={false}
+                className="h-9 w-9"
+              />
+              <Link to="/admin/pedidos/$id" params={{ id: p.id }}>
+                <Button size="sm" variant="outline">
+                  Apri
+                </Button>
+              </Link>
+            </div>
+          </div>
+          <div className="mt-3 min-w-0">
+            <StatusSelect id={p.id} numero={p.numero} status={p.status} fullWidth />
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 
-function StatusSelect({ id, numero, status }: { id: string; numero: string; status: string }) {
+function StatusSelect({
+  id,
+  numero,
+  status,
+  fullWidth = false,
+}: {
+  id: string;
+  numero: string;
+  status: string;
+  fullWidth?: boolean;
+}) {
   const qc = useQueryClient();
+  const aprovar = useServerFn(adminAprovarPedido);
   const pagar = useServerFn(adminMarcarPago);
   const mudar = useServerFn(adminMudarStatus);
   const cancelar = useServerFn(adminCancelarPedido);
@@ -325,9 +355,13 @@ function StatusSelect({ id, numero, status }: { id: string; numero: string; stat
 
   const mut = useMutation({
     mutationFn: async (novo: string) => {
+      if (novo === "aprovado") {
+        await aprovar({ data: { id } });
+        return { msg: `${numero}: approvato` };
+      }
       if (novo === "pago") {
         const r = await pagar({ data: { id } });
-        return { msg: `Pago. Documento ${r.documento_numero} gerado.` };
+        return { msg: `Pagato. Documento ${r.documento_numero} generato.` };
       }
       if (novo === "em_separacao" || novo === "entregue") {
         await mudar({ data: { id, status: novo } });
@@ -335,9 +369,9 @@ function StatusSelect({ id, numero, status }: { id: string; numero: string; stat
       }
       if (novo === "cancelado") {
         await cancelar({ data: { id } });
-        return { msg: `${numero}: cancelado` };
+        return { msg: `${numero}: annullato` };
       }
-      throw new Error("Transição inválida");
+      throw new Error("Transizione non valida");
     },
     onSuccess: (r) => { toast.success(r.msg); refresh(); },
     onError: (e: Error) => { toast.error(e.message); refresh(); },
@@ -352,7 +386,10 @@ function StatusSelect({ id, numero, status }: { id: string; numero: string; stat
       disabled={disabled}
       onValueChange={(v) => { if (v !== status) mut.mutate(v); }}
     >
-      <SelectTrigger className="h-8 w-[150px] text-xs" aria-label="Mudar status">
+      <SelectTrigger
+        className={`h-9 text-xs ${fullWidth ? "w-full" : "w-[150px]"}`}
+        aria-label="Cambia stato"
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

@@ -8,8 +8,8 @@ export function pedidoShareUrl(numero: string): string {
 
 export function pedidoShareMessage(numero: string, igrejaNome?: string): string {
   const url = pedidoShareUrl(numero);
-  const header = igrejaNome ? `Pedido ${numero} — ${igrejaNome}` : `Pedido ${numero}`;
-  return `${header}\n\nAcompanhe o status do pedido:\n${url}`;
+  const header = igrejaNome ? `Ordine ${numero} — ${igrejaNome}` : `Ordine ${numero}`;
+  return `${header}\n\nSegui lo stato dell'ordine:\n${url}`;
 }
 
 export function openPedidoWhatsApp(numero: string, igrejaNome?: string): void {

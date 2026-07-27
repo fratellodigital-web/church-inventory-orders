@@ -21,7 +21,7 @@ export const Route = createFileRoute("/api/admin/comprovante/$pedidoId")({
 
           if (error) throw new Error(error.message);
           if (!pedido?.comprovante_url && !pedido?.comprovante_drive_file_id) {
-            return new Response("Comprovante não encontrado", { status: 404 });
+            return new Response("Ricevuta non trovata", { status: 404 });
           }
 
           const fileId =
@@ -46,9 +46,9 @@ export const Route = createFileRoute("/api/admin/comprovante/$pedidoId")({
             return Response.redirect(pedido.comprovante_url, 302);
           }
 
-          return new Response("Comprovante não encontrado", { status: 404 });
+          return new Response("Ricevuta non trovata", { status: 404 });
         } catch (e) {
-          return new Response((e as Error).message || "Erro", { status: 500 });
+          return new Response((e as Error).message || "Errore", { status: 500 });
         }
       },
     },
