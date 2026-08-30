@@ -1,15 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   adminListarPedidos,
+  adminListarIgrejas,
   adminAprovarPedido,
   adminMarcarPago,
   adminMudarStatus,
   adminCancelarPedido,
 } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -20,6 +23,7 @@ import {
 import { useIsDesktop } from "@/lib/use-media-query";
 import { toast } from "sonner";
 import { SharePedidoButton } from "@/components/SharePedidoButton";
+import { X } from "lucide-react";
 
 export const Route = createFileRoute("/admin/pedidos/")({
   component: PedidosPage,
@@ -30,8 +34,21 @@ type Pedido = {
   numero: string;
   status: string;
   created_at: string;
+  igreja_id?: string;
   igrejas: { nome: string } | null;
 };
+
+const TODAS_IGREJAS = "__all__";
+
+/** Converte YYYY-MM-DD para ISO no início do dia (fuso local). */
+function inicioDoDiaIso(ymd: string): string {
+  return new Date(`${ymd}T00:00:00`).toISOString();
+}
+
+/** Converte YYYY-MM-DD para ISO no fim do dia (fuso local). */
+function fimDoDiaIso(ymd: string): string {
+  return new Date(`${ymd}T23:59:59.999`).toISOString();
+}
 
 const FILTROS = [
   { label: "Tutti", value: "" },
@@ -68,17 +85,111 @@ const TRANSICOES: Record<string, string[]> = {
 function PedidosPage() {
   const isDesktop = useIsDesktop();
   const [status, setStatus] = useState("");
+  const [igrejaId, setIgrejaId] = useState("");
+  const [dataDe, setDataDe] = useState("");
+  const [dataAte, setDataAte] = useState("");
   const fetcher = useServerFn(adminListarPedidos);
-  // No desktop (kanban) buscamos todos os pedidos; no celular respeitamos o filtro.
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin-pedidos", isDesktop ? "__kanban__" : status],
-    queryFn: () => fetcher({ data: { status: isDesktop ? null : status || null } }),
+  const listarIgrejas = useServerFn(adminListarIgrejas);
+
+  const { data: igrejas } = useQuery({
+    queryKey: ["admin-igrejas"],
+    queryFn: () => listarIgrejas(),
   });
+
+  const filtrosAtivos = !!(igrejaId || dataDe || dataAte);
+
+  const filtrosQuery = useMemo(
+    () => ({
+      status: isDesktop ? null : status || null,
+      igreja_id: igrejaId || null,
+      data_de: dataDe ? inicioDoDiaIso(dataDe) : null,
+      data_ate: dataAte ? fimDoDiaIso(dataAte) : null,
+    }),
+    [isDesktop, status, igrejaId, dataDe, dataAte],
+  );
+
+  // No desktop (kanban) buscamos todos os status; igreja/data sempre no servidor.
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-pedidos", isDesktop ? "__kanban__" : status, igrejaId, dataDe, dataAte],
+    queryFn: () => fetcher({ data: filtrosQuery }),
+  });
+
+  function limparFiltros() {
+    setIgrejaId("");
+    setDataDe("");
+    setDataAte("");
+  }
 
   return (
     <div>
       <div className="mb-4 flex flex-col gap-3">
         <h1 className="font-display text-3xl">Ordini</h1>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="min-w-0 flex-1 space-y-1.5 sm:max-w-xs">
+            <Label htmlFor="filtro-chiesa" className="text-xs text-muted-foreground">
+              Chiesa
+            </Label>
+            <Select
+              value={igrejaId || TODAS_IGREJAS}
+              onValueChange={(v) => setIgrejaId(v === TODAS_IGREJAS ? "" : v)}
+            >
+              <SelectTrigger id="filtro-chiesa" className="w-full">
+                <SelectValue placeholder="Tutte le chiese" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={TODAS_IGREJAS}>Tutte le chiese</SelectItem>
+                {(igrejas ?? []).map((ig) => (
+                  <SelectItem key={ig.id} value={ig.id}>
+                    {ig.nome}
+                    {ig.cidade ? ` (${ig.cidade})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="filtro-dal" className="text-xs text-muted-foreground">
+              Dal
+            </Label>
+            <Input
+              id="filtro-dal"
+              type="date"
+              value={dataDe}
+              onChange={(e) => setDataDe(e.target.value)}
+              className="w-full sm:w-[10.5rem]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="filtro-al" className="text-xs text-muted-foreground">
+              Al
+            </Label>
+            <Input
+              id="filtro-al"
+              type="date"
+              value={dataAte}
+              min={dataDe || undefined}
+              onChange={(e) => setDataAte(e.target.value)}
+              className="w-full sm:w-[10.5rem]"
+            />
+          </div>
+
+          {filtrosAtivos && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="shrink-0 self-start sm:self-end"
+              onClick={limparFiltros}
+            >
+              <X className="mr-1 h-4 w-4" />
+              Pulisci
+            </Button>
+          )}
+        </div>
+
         {!isDesktop && (
           <div className="-mx-4 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
             <div className="flex w-max flex-nowrap gap-1.5 pb-1">
@@ -109,7 +220,11 @@ function PedidosPage() {
           </div>
         )
       ) : isDesktop ? (
-        <KanbanBoard pedidos={(data ?? []) as Pedido[]} />
+        (data ?? []).length === 0 ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">Nessun ordine.</p>
+        ) : (
+          <KanbanBoard pedidos={(data ?? []) as Pedido[]} />
+        )
       ) : !data || data.length === 0 ? (
         <p className="py-10 text-center text-sm text-muted-foreground">Nessun ordine.</p>
       ) : (

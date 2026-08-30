@@ -72,15 +72,34 @@ function formatComprovanteDate(d = new Date()): string {
 }
 
 export const adminListarPedidos = createServerFn({ method: "GET" })
-  .inputValidator((d: { status?: string | null } | undefined) => ({ status: d?.status ?? null }))
+  .inputValidator(
+    (
+      d:
+        | {
+            status?: string | null;
+            igreja_id?: string | null;
+            data_de?: string | null;
+            data_ate?: string | null;
+          }
+        | undefined,
+    ) => ({
+      status: d?.status ?? null,
+      igreja_id: d?.igreja_id ?? null,
+      data_de: d?.data_de ?? null,
+      data_ate: d?.data_ate ?? null,
+    }),
+  )
   .handler(async ({ data }) => {
     const sb = await admin();
     let q = sb
       .from("pedidos")
-      .select("id, numero, status, created_at, pago_em, igrejas(nome)")
+      .select("id, numero, status, created_at, pago_em, igreja_id, igrejas(nome)")
       .order("created_at", { ascending: false })
       .limit(200);
     if (data.status) q = q.eq("status", data.status as never);
+    if (data.igreja_id) q = q.eq("igreja_id", data.igreja_id as never);
+    if (data.data_de) q = q.gte("created_at", data.data_de);
+    if (data.data_ate) q = q.lte("created_at", data.data_ate);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
     return rows ?? [];
