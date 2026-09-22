@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SaldoRouteImport } from './routes/saldo'
 import { Route as MeusPedidosRouteImport } from './routes/meus-pedidos'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -19,11 +20,17 @@ import { Route as AdminProdutosRouteImport } from './routes/admin.produtos'
 import { Route as AdminPedidosRouteImport } from './routes/admin.pedidos'
 import { Route as AdminIgrejasRouteImport } from './routes/admin.igrejas'
 import { Route as AdminEstoqueRouteImport } from './routes/admin.estoque'
+import { Route as AdminDepositosRouteImport } from './routes/admin.depositos'
 import { Route as AdminPedidosIndexRouteImport } from './routes/admin.pedidos.index'
 import { Route as AdminPedidosIdRouteImport } from './routes/admin.pedidos.$id'
 import { Route as ApiPublicDocumentoNumeroRouteImport } from './routes/api/public/documento.$numero'
 import { Route as ApiAdminComprovantePedidoIdRouteImport } from './routes/api/admin/comprovante.$pedidoId'
 
+const SaldoRoute = SaldoRouteImport.update({
+  id: '/saldo',
+  path: '/saldo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MeusPedidosRoute = MeusPedidosRouteImport.update({
   id: '/meus-pedidos',
   path: '/meus-pedidos',
@@ -74,6 +81,11 @@ const AdminEstoqueRoute = AdminEstoqueRouteImport.update({
   path: '/estoque',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminDepositosRoute = AdminDepositosRouteImport.update({
+  id: '/depositos',
+  path: '/depositos',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminPedidosIndexRoute = AdminPedidosIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -102,6 +114,8 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/catalogo': typeof CatalogoRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/saldo': typeof SaldoRoute
+  '/admin/depositos': typeof AdminDepositosRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/igrejas': typeof AdminIgrejasRoute
   '/admin/pedidos': typeof AdminPedidosRouteWithChildren
@@ -117,6 +131,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/catalogo': typeof CatalogoRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/saldo': typeof SaldoRoute
+  '/admin/depositos': typeof AdminDepositosRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/igrejas': typeof AdminIgrejasRoute
   '/admin/produtos': typeof AdminProdutosRoute
@@ -133,6 +149,8 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/catalogo': typeof CatalogoRoute
   '/meus-pedidos': typeof MeusPedidosRoute
+  '/saldo': typeof SaldoRoute
+  '/admin/depositos': typeof AdminDepositosRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/igrejas': typeof AdminIgrejasRoute
   '/admin/pedidos': typeof AdminPedidosRouteWithChildren
@@ -151,6 +169,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/catalogo'
     | '/meus-pedidos'
+    | '/saldo'
+    | '/admin/depositos'
     | '/admin/estoque'
     | '/admin/igrejas'
     | '/admin/pedidos'
@@ -166,6 +186,8 @@ export interface FileRouteTypes {
     | '/'
     | '/catalogo'
     | '/meus-pedidos'
+    | '/saldo'
+    | '/admin/depositos'
     | '/admin/estoque'
     | '/admin/igrejas'
     | '/admin/produtos'
@@ -181,6 +203,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/catalogo'
     | '/meus-pedidos'
+    | '/saldo'
+    | '/admin/depositos'
     | '/admin/estoque'
     | '/admin/igrejas'
     | '/admin/pedidos'
@@ -198,6 +222,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   CatalogoRoute: typeof CatalogoRoute
   MeusPedidosRoute: typeof MeusPedidosRoute
+  SaldoRoute: typeof SaldoRoute
   PedidoNumeroRoute: typeof PedidoNumeroRoute
   ApiAdminComprovantePedidoIdRoute: typeof ApiAdminComprovantePedidoIdRoute
   ApiPublicDocumentoNumeroRoute: typeof ApiPublicDocumentoNumeroRoute
@@ -205,6 +230,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/saldo': {
+      id: '/saldo'
+      path: '/saldo'
+      fullPath: '/saldo'
+      preLoaderRoute: typeof SaldoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/meus-pedidos': {
       id: '/meus-pedidos'
       path: '/meus-pedidos'
@@ -275,6 +307,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEstoqueRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/depositos': {
+      id: '/admin/depositos'
+      path: '/depositos'
+      fullPath: '/admin/depositos'
+      preLoaderRoute: typeof AdminDepositosRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/pedidos/': {
       id: '/admin/pedidos/'
       path: '/'
@@ -321,6 +360,7 @@ const AdminPedidosRouteWithChildren = AdminPedidosRoute._addFileChildren(
 )
 
 interface AdminRouteChildren {
+  AdminDepositosRoute: typeof AdminDepositosRoute
   AdminEstoqueRoute: typeof AdminEstoqueRoute
   AdminIgrejasRoute: typeof AdminIgrejasRoute
   AdminPedidosRoute: typeof AdminPedidosRouteWithChildren
@@ -329,6 +369,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminDepositosRoute: AdminDepositosRoute,
   AdminEstoqueRoute: AdminEstoqueRoute,
   AdminIgrejasRoute: AdminIgrejasRoute,
   AdminPedidosRoute: AdminPedidosRouteWithChildren,
@@ -343,6 +384,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   CatalogoRoute: CatalogoRoute,
   MeusPedidosRoute: MeusPedidosRoute,
+  SaldoRoute: SaldoRoute,
   PedidoNumeroRoute: PedidoNumeroRoute,
   ApiAdminComprovantePedidoIdRoute: ApiAdminComprovantePedidoIdRoute,
   ApiPublicDocumentoNumeroRoute: ApiPublicDocumentoNumeroRoute,

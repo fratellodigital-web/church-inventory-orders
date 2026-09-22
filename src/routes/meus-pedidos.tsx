@@ -2,11 +2,12 @@ import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { listarPedidosIgreja } from "@/lib/orders.functions";
+import { obterSaldoIgreja } from "@/lib/saldo.functions";
 import { AppHeader } from "@/components/AppHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { useIgrejaSelecionada } from "@/lib/cart-store";
-import { ChevronRight, RefreshCw, ClipboardList } from "lucide-react";
+import { ChevronRight, RefreshCw, ClipboardList, Wallet } from "lucide-react";
 import { SharePedidoButton } from "@/components/SharePedidoButton";
 
 export const Route = createFileRoute("/meus-pedidos")({
@@ -14,9 +15,12 @@ export const Route = createFileRoute("/meus-pedidos")({
   component: MeusPedidosPage,
 });
 
+const currency = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
+
 function MeusPedidosPage() {
   const { igreja } = useIgrejaSelecionada();
   const fetcher = useServerFn(listarPedidosIgreja);
+  const getSaldo = useServerFn(obterSaldoIgreja);
 
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["meus-pedidos", igreja?.id],
@@ -26,15 +30,30 @@ function MeusPedidosPage() {
     refetchOnWindowFocus: true,
   });
 
+  const { data: saldoData } = useQuery({
+    queryKey: ["saldo-igreja", igreja?.id],
+    queryFn: () => getSaldo({ data: { igreja_id: igreja!.id } }),
+    enabled: !!igreja,
+    refetchInterval: 30000,
+  });
+
   if (typeof window !== "undefined" && !igreja) return <Navigate to="/" />;
 
   return (
     <div className="min-h-screen bg-background">
       <AppHeader
         rightSlot={
-          <Link to="/catalogo">
-            <Button variant="outline" size="sm">Nuovo ordine</Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link to="/saldo">
+              <Button variant="outline" size="sm">
+                <Wallet className="mr-1 h-3.5 w-3.5" />
+                Saldo
+              </Button>
+            </Link>
+            <Link to="/catalogo">
+              <Button variant="outline" size="sm">Nuovo ordine</Button>
+            </Link>
+          </div>
         }
       />
       <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
@@ -56,6 +75,17 @@ function MeusPedidosPage() {
             <span className="ml-1 hidden sm:inline">Aggiorna</span>
           </Button>
         </div>
+
+        <Link
+          to="/saldo"
+          className="mb-6 flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3 transition hover:border-foreground/40"
+        >
+          <div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground">Saldo disponibile</div>
+            <div className="mt-0.5 text-lg font-semibold">{currency.format(saldoData?.saldo ?? 0)}</div>
+          </div>
+          <span className="text-sm text-muted-foreground">Gestisci →</span>
+        </Link>
 
         {isLoading ? (
           <div className="space-y-3">

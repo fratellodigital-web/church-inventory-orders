@@ -71,11 +71,43 @@ function PedidoPage() {
             </ul>
 
             {"total_valor" in pedido && pedido.total_valor != null && (
-              <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
-                <span className="text-sm text-muted-foreground">Totale</span>
-                <span className="text-lg font-semibold text-foreground">
-                  {new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(pedido.total_valor)}
-                </span>
+              <div className="mt-4 space-y-1.5 border-t border-border pt-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Totale</span>
+                  <span className="text-lg font-semibold text-foreground">
+                    {new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(pedido.total_valor)}
+                  </span>
+                </div>
+                {Number(pedido.valor_pago_saldo ?? 0) > 0 && (
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>Pagato dal saldo</span>
+                    <span>
+                      {new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(
+                        Number(pedido.valor_pago_saldo),
+                      )}
+                    </span>
+                  </div>
+                )}
+                {Number(pedido.valor_pago_bonifico ?? 0) > 0 && (
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>Pagato con bonifico</span>
+                    <span>
+                      {new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(
+                        Number(pedido.valor_pago_bonifico),
+                      )}
+                    </span>
+                  </div>
+                )}
+                {pedido.status === "aprovado" && pedido.rimanente != null && (
+                  <div className="flex items-center justify-between text-sm font-medium">
+                    <span>Rimanente</span>
+                    <span>
+                      {new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(
+                        Number(pedido.rimanente),
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 

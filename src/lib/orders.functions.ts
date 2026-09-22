@@ -164,18 +164,28 @@ export const buscarPedido = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { pedidoMostraPreco } = await import("./pedido-status");
+    const { rimanentePedido } = await import("./money");
     const { data: pedido, error } = await supabaseAdmin
       .from("pedidos")
       .select(
-        "id, numero, status, observacao, solicitante_nome, created_at, pago_em, entregue_em, igrejas(nome, cidade), pedido_itens(quantidade, snapshot_nome, snapshot_unidade, snapshot_preco), documentos_saida(numero)",
+        "id, numero, status, observacao, solicitante_nome, created_at, pago_em, entregue_em, valor_pago_saldo, valor_pago_bonifico, igrejas(nome, cidade), pedido_itens(quantidade, snapshot_nome, snapshot_unidade, snapshot_preco), documentos_saida(numero)",
       )
       .eq("numero", data.numero)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!pedido) return null;
 
+    const valor_pago_saldo = Number(pedido.valor_pago_saldo ?? 0);
+    const valor_pago_bonifico = Number(pedido.valor_pago_bonifico ?? 0);
+
     if (!pedidoMostraPreco(pedido.status)) {
-      return { ...pedido, total_valor: null };
+      return {
+        ...pedido,
+        total_valor: null,
+        valor_pago_saldo,
+        valor_pago_bonifico,
+        rimanente: null,
+      };
     }
 
     const itens = (pedido.pedido_itens ?? []) as { quantidade: number; snapshot_preco: number | null }[];
@@ -183,5 +193,16 @@ export const buscarPedido = createServerFn({ method: "GET" })
       (s, it) => s + Number(it.snapshot_preco ?? 0) * it.quantidade,
       0,
     );
-    return { ...pedido, total_valor };
+    const rimanente = rimanentePedido({
+      total: total_valor,
+      valor_pago_saldo,
+      valor_pago_bonifico,
+    });
+    return {
+      ...pedido,
+      total_valor,
+      valor_pago_saldo,
+      valor_pago_bonifico,
+      rimanente,
+    };
   });
