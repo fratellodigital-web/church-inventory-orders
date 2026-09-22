@@ -21,6 +21,7 @@ type Igreja = {
   responsavel: string | null;
   telefone: string | null;
   ativo: boolean;
+  saldo?: number;
 };
 
 function formatLocalidade(value: string) {
@@ -59,6 +60,7 @@ function IgrejasPage() {
                 <th className="px-4 py-2">Codice</th>
                 <th className="px-4 py-2">Responsabile</th>
                 <th className="px-4 py-2">Telefono</th>
+                <th className="px-4 py-2">Saldo</th>
                 <th className="px-4 py-2">Stato</th>
                 <th className="px-4 py-2"></th>
               </tr>
@@ -73,6 +75,11 @@ function IgrejasPage() {
                     <td className="px-4 py-2 text-muted-foreground">{igreja.cidade ?? "—"}</td>
                     <td className="px-4 py-2 text-muted-foreground">{igreja.responsavel ?? "—"}</td>
                     <td className="px-4 py-2 text-muted-foreground">{igreja.telefone ?? "—"}</td>
+                    <td className="px-4 py-2 font-medium">
+                      {new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(
+                        Number(igreja.saldo ?? 0),
+                      )}
+                    </td>
                     <td className="px-4 py-2 text-xs">{igreja.ativo ? "Attiva" : "Inattiva"}</td>
                     <td className="px-4 py-2 text-right">
                       <Button size="sm" variant="outline" onClick={() => { setEdit(igreja); setOpen(true); }}>Modifica</Button>

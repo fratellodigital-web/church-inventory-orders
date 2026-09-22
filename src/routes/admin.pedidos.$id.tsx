@@ -6,6 +6,7 @@ import {
   adminGetPedido,
   adminAprovarPedido,
   adminMarcarPago,
+  adminAplicarSaldoPedido,
   adminMudarStatus,
   adminCancelarPedido,
   adminSalvarComprovante,
@@ -13,6 +14,7 @@ import {
   adminListarProdutos,
 } from "@/lib/admin.functions";
 import { pedidoMostraPreco } from "@/lib/pedido-status";
+import { rimanentePedido, roundMoney } from "@/lib/money";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +30,7 @@ import {
 import { ArrowLeft, FileText, Minus, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { SharePedidoButton } from "@/components/SharePedidoButton";
-
+import { Checkbox } from "@/components/ui/checkbox";
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -48,13 +50,17 @@ function PedidoDetalhe() {
   const fetcher = useServerFn(adminGetPedido);
   const aprovar = useServerFn(adminAprovarPedido);
   const pagar = useServerFn(adminMarcarPago);
+  const aplicarSaldo = useServerFn(adminAplicarSaldoPedido);
   const mudar = useServerFn(adminMudarStatus);
   const cancelar = useServerFn(adminCancelarPedido);
   const { data: p, isLoading } = useQuery({ queryKey: ["admin-pedido", id], queryFn: () => fetcher({ data: { id } }) });
 
+  const [confirmaBonifico, setConfirmaBonifico] = useState(false);
+
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["admin-pedido", id] });
     qc.invalidateQueries({ queryKey: ["admin-pedidos"] });
+    qc.invalidateQueries({ queryKey: ["admin-igrejas"] });
   };
 
   const mAprovar = useMutation({
@@ -67,9 +73,23 @@ function PedidoDetalhe() {
   });
 
   const mPagar = useMutation({
-    mutationFn: () => pagar({ data: { id } }),
+    mutationFn: () => pagar({ data: { id, pagar_bonifico_restante: confirmaBonifico } }),
     onSuccess: (res) => {
       toast.success(`Pagato. Documento ${res.documento_numero} generato.`);
+      setConfirmaBonifico(false);
+      refresh();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const mAplicarSaldo = useMutation({
+    mutationFn: (valor: number) => aplicarSaldo({ data: { id, valor } }),
+    onSuccess: (res) => {
+      toast.success(
+        res.rimanente > 0
+          ? `Saldo applicato. Rimanente: ${new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(res.rimanente)}`
+          : "Saldo applicato. Totale coperto — puoi segnare come pagato.",
+      );
       refresh();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -96,7 +116,13 @@ function PedidoDetalhe() {
   if (isLoading) return <div className="h-60 animate-pulse rounded-lg bg-muted" />;
   if (!p) return <p>Non trovato</p>;
 
-  const igreja = p.igrejas as { nome: string; cidade: string | null; responsavel: string | null; telefone: string | null } | null;
+  const igreja = p.igrejas as {
+    nome: string;
+    cidade: string | null;
+    responsavel: string | null;
+    telefone: string | null;
+    saldo: number;
+  } | null;
   const itens = p.pedido_itens as {
     id: string;
     produto_id: string;
@@ -113,6 +139,18 @@ function PedidoDetalhe() {
   const totalValor = mostraPreco
     ? itens.reduce((s, it) => s + Number(it.snapshot_preco ?? 0) * it.quantidade, 0)
     : 0;
+  const valorPagoSaldo = Number(p.valor_pago_saldo ?? 0);
+  const valorPagoBonifico = Number(p.valor_pago_bonifico ?? 0);
+  const rimanente = mostraPreco
+    ? rimanentePedido({
+        total: totalValor,
+        valor_pago_saldo: valorPagoSaldo,
+        valor_pago_bonifico: valorPagoBonifico,
+      })
+    : 0;
+  const saldoIgreja = Number(igreja?.saldo ?? 0);
+  const maxSaldoAplicavel = roundMoney(Math.min(saldoIgreja, rimanente));
+  const rimanenteDopoSaldo = roundMoney(rimanente - maxSaldoAplicavel);
 
   return (
     <div>
@@ -135,6 +173,8 @@ function PedidoDetalhe() {
               <div className="text-xs uppercase tracking-wider text-muted-foreground">Chiesa</div>
               <div className="font-medium">{igreja?.nome}</div>
               {igreja?.cidade && <div className="text-muted-foreground">{igreja.cidade}</div>}
+              <div className="mt-2 text-xs uppercase tracking-wider text-muted-foreground">Saldo disponibile</div>
+              <div className="font-semibold">{currency.format(saldoIgreja)}</div>
             </div>
             {igreja?.responsavel && (
               <div>
@@ -157,6 +197,7 @@ function PedidoDetalhe() {
               solicitante={p.solicitante_nome}
               observacao={p.observacao}
               itens={itens}
+              saldoIgreja={saldoIgreja}
               onSaved={refresh}
             />
           ) : (
@@ -185,9 +226,29 @@ function PedidoDetalhe() {
               )}
 
               {mostraPreco && (
-                <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
-                  <span className="text-sm text-muted-foreground">Totale</span>
-                  <span className="text-lg font-semibold">{currency.format(totalValor)}</span>
+                <div className="mt-6 space-y-1.5 border-t border-border pt-4 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Totale</span>
+                    <span className="text-lg font-semibold">{currency.format(totalValor)}</span>
+                  </div>
+                  {(valorPagoSaldo > 0 || p.status === "pago" || isAprovado) && (
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span>Dal saldo</span>
+                      <span>− {currency.format(valorPagoSaldo)}</span>
+                    </div>
+                  )}
+                  {valorPagoBonifico > 0 && (
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span>Da bonifico</span>
+                      <span>− {currency.format(valorPagoBonifico)}</span>
+                    </div>
+                  )}
+                  {isAprovado && (
+                    <div className="flex items-center justify-between font-medium">
+                      <span>Rimanente</span>
+                      <span>{currency.format(rimanente)}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -195,6 +256,11 @@ function PedidoDetalhe() {
         </article>
 
         <aside className="space-y-4">
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="text-xs uppercase tracking-widest text-muted-foreground">Saldo chiesa</div>
+            <div className="mt-1 text-xl font-semibold">{currency.format(saldoIgreja)}</div>
+          </div>
+
           <div className="rounded-lg border border-border bg-card p-4">
             <h3 className="text-xs uppercase tracking-widest text-muted-foreground">Azioni</h3>
             <div className="mt-3 flex flex-col gap-2">
@@ -211,7 +277,72 @@ function PedidoDetalhe() {
               )}
               {isAprovado && (
                 <>
-                  <Button onClick={() => mPagar.mutate()} disabled={mPagar.isPending}>
+                  <div className="rounded-md border border-border bg-secondary/40 p-3 text-sm space-y-1.5">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Totale</span>
+                      <span>{currency.format(totalValor)}</span>
+                    </div>
+                    {valorPagoSaldo > 0 && (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Già dal saldo</span>
+                        <span>− {currency.format(valorPagoSaldo)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Rimanente</span>
+                      <span>{currency.format(rimanente)}</span>
+                    </div>
+                    {maxSaldoAplicavel > 0 && (
+                      <>
+                        <div className="flex justify-between font-medium">
+                          <span>Applicabile ora</span>
+                          <span>{currency.format(maxSaldoAplicavel)}</span>
+                        </div>
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Rimanente dopo</span>
+                          <span>{currency.format(rimanenteDopoSaldo)}</span>
+                        </div>
+                      </>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="mt-2 w-full"
+                      disabled={mAplicarSaldo.isPending || maxSaldoAplicavel <= 0}
+                      onClick={() => mAplicarSaldo.mutate(maxSaldoAplicavel)}
+                    >
+                      {mAplicarSaldo.isPending
+                        ? "..."
+                        : maxSaldoAplicavel > 0
+                          ? `Applica saldo (${currency.format(maxSaldoAplicavel)})`
+                          : "Nessun saldo da applicare"}
+                    </Button>
+                    {maxSaldoAplicavel <= 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {rimanente <= 0
+                          ? "Totale già coperto dal saldo."
+                          : "Nessun saldo disponibile."}
+                      </p>
+                    )}
+                  </div>
+
+                  {rimanente > 0 && (
+                    <label className="flex cursor-pointer items-start gap-2 text-sm">
+                      <Checkbox
+                        checked={confirmaBonifico}
+                        onCheckedChange={(v) => setConfirmaBonifico(v === true)}
+                        className="mt-0.5"
+                      />
+                      <span>
+                        Conferma bonifico del rimanente ({currency.format(rimanente)}) e segna come pagato
+                      </span>
+                    </label>
+                  )}
+
+                  <Button
+                    onClick={() => mPagar.mutate()}
+                    disabled={mPagar.isPending || (rimanente > 0 && !confirmaBonifico)}
+                  >
                     {mPagar.isPending ? "Elaborazione..." : "Segna come pagato"}
                   </Button>
                   <Button variant="outline" onClick={() => mCancelar.mutate()} disabled={mCancelar.isPending}>
@@ -271,12 +402,14 @@ function EditarPedidoForm({
   solicitante,
   observacao,
   itens,
+  saldoIgreja,
   onSaved,
 }: {
   pedidoId: string;
   solicitante: string | null;
   observacao: string | null;
   itens: { produto_id: string; quantidade: number; snapshot_nome: string; snapshot_unidade: string }[];
+  saldoIgreja: number;
   onSaved: () => void;
 }) {
   const listProdutos = useServerFn(adminListarProdutos);
@@ -308,9 +441,11 @@ function EditarPedidoForm({
   }, [itens, solicitante, observacao, produtos]);
 
   const total = useMemo(
-    () => linhas.reduce((s, l) => s + l.preco * l.quantidade, 0),
+    () => roundMoney(linhas.reduce((s, l) => s + l.preco * l.quantidade, 0)),
     [linhas],
   );
+  const dalSaldo = roundMoney(Math.min(saldoIgreja, total));
+  const daBonifico = roundMoney(total - dalSaldo);
 
   const produtosParaAdd = (produtos ?? []).filter(
     (p) => p.ativo && !linhas.some((l) => l.produto_id === p.id),
@@ -472,9 +607,29 @@ function EditarPedidoForm({
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-t border-border pt-3">
-        <span className="text-sm text-muted-foreground">Totale</span>
-        <span className="text-lg font-semibold">{currency.format(total)}</span>
+      <div className="space-y-1.5 border-t border-border pt-3 text-sm">
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">Totale</span>
+          <span className="text-lg font-semibold">{currency.format(total)}</span>
+        </div>
+        <div className="flex items-center justify-between text-muted-foreground">
+          <span>Saldo disponibile</span>
+          <span>{currency.format(saldoIgreja)}</span>
+        </div>
+        {total <= 0 ? null : total <= saldoIgreja ? (
+          <p className="text-xs text-muted-foreground">Copribile interamente dal saldo</p>
+        ) : (
+          <div className="space-y-0.5 text-xs text-muted-foreground">
+            <div className="flex justify-between">
+              <span>Dal saldo</span>
+              <span>{currency.format(dalSaldo)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Da bonifico</span>
+              <span>{currency.format(daBonifico)}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <Button className="w-full sm:w-auto" disabled={linhas.length === 0 || mut.isPending} onClick={() => mut.mutate()}>

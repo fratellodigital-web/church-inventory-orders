@@ -112,7 +112,7 @@ export const adminGetPedido = createServerFn({ method: "GET" })
     const { data: pedido, error } = await sb
       .from("pedidos")
       .select(
-        "id, numero, status, observacao, solicitante_nome, created_at, aprovado_em, pago_em, entregue_em, comprovante_url, comprovante_drive_file_id, comprovante_numero, igrejas(nome, cidade, responsavel, telefone), pedido_itens(id, produto_id, quantidade, snapshot_nome, snapshot_unidade, snapshot_preco), documentos_saida(numero, created_at)",
+        "id, numero, status, observacao, solicitante_nome, created_at, aprovado_em, pago_em, entregue_em, comprovante_url, comprovante_drive_file_id, comprovante_numero, valor_pago_saldo, valor_pago_bonifico, igrejas(nome, cidade, responsavel, telefone, saldo), pedido_itens(id, produto_id, quantidade, snapshot_nome, snapshot_unidade, snapshot_preco), documentos_saida(numero, created_at)",
       )
       .eq("id", data.id)
       .maybeSingle();
@@ -332,17 +332,41 @@ export const adminAprovarPedido = createServerFn({ method: "POST" })
   });
 
 export const adminMarcarPago = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string }) => ({ id: z.string().uuid().parse(d.id) }))
+  .inputValidator((d: { id: string; pagar_bonifico_restante?: boolean }) => ({
+    id: z.string().uuid().parse(d.id),
+    pagar_bonifico_restante: Boolean(d.pagar_bonifico_restante),
+  }))
   .handler(async ({ data }) => {
     const sb = await admin();
+    const { roundMoney, totalPedidoFromItens, rimanentePedido } = await import("./money");
     const { data: pedido, error: pErr } = await sb
       .from("pedidos")
-      .select("id, numero, status, pedido_itens(produto_id, quantidade)")
+      .select(
+        "id, numero, status, igreja_id, valor_pago_saldo, valor_pago_bonifico, pedido_itens(produto_id, quantidade, snapshot_preco)",
+      )
       .eq("id", data.id)
       .maybeSingle();
     if (pErr) throw new Error(pErr.message);
     if (!pedido) throw new Error("Ordine non trovato");
     if (pedido.status !== "aprovado") throw new Error("L'ordine non è approvato");
+
+    const total = totalPedidoFromItens(pedido.pedido_itens);
+    let valorPagoBonifico = Number(pedido.valor_pago_bonifico ?? 0);
+    let rimanente = rimanentePedido({
+      total,
+      valor_pago_saldo: Number(pedido.valor_pago_saldo ?? 0),
+      valor_pago_bonifico: valorPagoBonifico,
+    });
+
+    if (rimanente > 0) {
+      if (!data.pagar_bonifico_restante) {
+        throw new Error(
+          "Rimanente da pagare. Apri il dettaglio per applicare il saldo o conferma il bonifico.",
+        );
+      }
+      valorPagoBonifico = roundMoney(valorPagoBonifico + rimanente);
+      rimanente = 0;
+    }
 
     // checa estoque físico antes de abater
     const ids = pedido.pedido_itens.map((i) => i.produto_id);
@@ -403,11 +427,94 @@ export const adminMarcarPago = createServerFn({ method: "POST" })
     // atualiza pedido
     const { error: upErr } = await sb
       .from("pedidos")
-      .update({ status: "pago", pago_em: new Date().toISOString() })
+      .update({
+        status: "pago",
+        pago_em: new Date().toISOString(),
+        valor_pago_bonifico: valorPagoBonifico,
+      })
       .eq("id", pedido.id);
     if (upErr) throw new Error(upErr.message);
 
     return { documento_numero: doc.numero };
+  });
+
+export const adminAplicarSaldoPedido = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string; valor: number }) => ({
+    id: z.string().uuid().parse(d.id),
+    valor: z.number().positive().max(1_000_000).parse(d.valor),
+  }))
+  .handler(async ({ data }) => {
+    const sb = await admin();
+    const { roundMoney, totalPedidoFromItens, rimanentePedido } = await import("./money");
+
+    const { data: pedido, error: pErr } = await sb
+      .from("pedidos")
+      .select(
+        "id, numero, status, igreja_id, valor_pago_saldo, valor_pago_bonifico, pedido_itens(quantidade, snapshot_preco)",
+      )
+      .eq("id", data.id)
+      .maybeSingle();
+    if (pErr) throw new Error(pErr.message);
+    if (!pedido) throw new Error("Ordine non trovato");
+    if (pedido.status !== "aprovado") throw new Error("L'ordine non è approvato");
+
+    const { data: igreja, error: igErr } = await sb
+      .from("igrejas")
+      .select("id, saldo")
+      .eq("id", pedido.igreja_id)
+      .maybeSingle();
+    if (igErr) throw new Error(igErr.message);
+    if (!igreja) throw new Error("Chiesa non trovata");
+
+    const total = totalPedidoFromItens(pedido.pedido_itens);
+    const rimanente = rimanentePedido({
+      total,
+      valor_pago_saldo: Number(pedido.valor_pago_saldo ?? 0),
+      valor_pago_bonifico: Number(pedido.valor_pago_bonifico ?? 0),
+    });
+    if (rimanente <= 0) throw new Error("Nessun importo rimanente");
+
+    const saldoIgreja = Number(igreja.saldo ?? 0);
+    const valor = roundMoney(data.valor);
+    const maxAplicavel = roundMoney(Math.min(saldoIgreja, rimanente));
+    if (valor > maxAplicavel) {
+      throw new Error(`Importo massimo applicabile: € ${maxAplicavel.toFixed(2)}`);
+    }
+
+    const novoSaldoIgreja = roundMoney(saldoIgreja - valor);
+    const novoValorPagoSaldo = roundMoney(Number(pedido.valor_pago_saldo ?? 0) + valor);
+
+    const { error: sErr } = await sb.from("igrejas").update({ saldo: novoSaldoIgreja }).eq("id", igreja.id);
+    if (sErr) throw new Error(sErr.message);
+
+    const { error: pUpErr } = await sb
+      .from("pedidos")
+      .update({ valor_pago_saldo: novoValorPagoSaldo })
+      .eq("id", pedido.id);
+    if (pUpErr) throw new Error(pUpErr.message);
+
+    const { error: mErr } = await sb.from("movimentacoes_saldo").insert({
+      igreja_id: igreja.id,
+      tipo: "uso_pedido",
+      valor: -valor,
+      pedido_id: pedido.id,
+      descricao: `Uso saldo ordine ${pedido.numero}`,
+    });
+    if (mErr) throw new Error(mErr.message);
+
+    const nuovoRimanente = rimanentePedido({
+      total,
+      valor_pago_saldo: novoValorPagoSaldo,
+      valor_pago_bonifico: Number(pedido.valor_pago_bonifico ?? 0),
+    });
+
+    return {
+      ok: true,
+      valor_aplicado: valor,
+      valor_pago_saldo: novoValorPagoSaldo,
+      rimanente: nuovoRimanente,
+      saldo_igreja: novoSaldoIgreja,
+    };
   });
 
 export const adminMudarStatus = createServerFn({ method: "POST" })
@@ -428,9 +535,10 @@ export const adminCancelarPedido = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string }) => ({ id: z.string().uuid().parse(d.id) }))
   .handler(async ({ data }) => {
     const sb = await admin();
+    const { roundMoney } = await import("./money");
     const { data: pedido } = await sb
       .from("pedidos")
-      .select("id, numero, status, pedido_itens(produto_id, quantidade)")
+      .select("id, numero, status, igreja_id, valor_pago_saldo, pedido_itens(produto_id, quantidade)")
       .eq("id", data.id)
       .maybeSingle();
     if (!pedido) throw new Error("Ordine non trovato");
@@ -459,9 +567,35 @@ export const adminCancelarPedido = createServerFn({ method: "POST" })
       }
     }
 
+    // estorna saldo usado no pedido
+    const valorSaldo = Number(pedido.valor_pago_saldo ?? 0);
+    if (valorSaldo > 0) {
+      const { data: igreja } = await sb
+        .from("igrejas")
+        .select("id, saldo")
+        .eq("id", pedido.igreja_id)
+        .maybeSingle();
+      if (igreja) {
+        const novoSaldo = roundMoney(Number(igreja.saldo ?? 0) + valorSaldo);
+        await sb.from("igrejas").update({ saldo: novoSaldo }).eq("id", igreja.id);
+        await sb.from("movimentacoes_saldo").insert({
+          igreja_id: igreja.id,
+          tipo: "estorno",
+          valor: valorSaldo,
+          pedido_id: pedido.id,
+          descricao: `Estorno saldo ordine ${pedido.numero}`,
+        });
+      }
+    }
+
     const { error } = await sb
       .from("pedidos")
-      .update({ status: "cancelado", cancelado_em: new Date().toISOString() })
+      .update({
+        status: "cancelado",
+        cancelado_em: new Date().toISOString(),
+        valor_pago_saldo: 0,
+        valor_pago_bonifico: 0,
+      })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -656,3 +790,104 @@ export const adminListarMovimentacoes = createServerFn({ method: "GET" }).handle
   if (error) throw new Error(error.message);
   return data ?? [];
 });
+
+// ============ DEPOSITOS / SALDO ============
+export const adminListarDepositos = createServerFn({ method: "GET" })
+  .inputValidator((d: { status?: string | null } | undefined) => ({
+    status: d?.status ?? null,
+  }))
+  .handler(async ({ data }) => {
+    const sb = await admin();
+    let q = sb
+      .from("depositos")
+      .select(
+        "id, valor, numero_transacao, imagem_url, drive_file_id, status, observacao_admin, created_at, confirmado_em, rejeitado_em, igrejas(id, nome, cidade)",
+      )
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (data.status) q = q.eq("status", data.status as never);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    return (rows ?? []).map((r) => ({ ...r, valor: Number(r.valor) }));
+  });
+
+export const adminConfirmarDeposito = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string; observacao_admin?: string | null }) => ({
+    id: z.string().uuid().parse(d.id),
+    observacao_admin: d.observacao_admin ? z.string().max(500).parse(d.observacao_admin) : null,
+  }))
+  .handler(async ({ data }) => {
+    const sb = await admin();
+    const { roundMoney } = await import("./money");
+
+    const { data: dep, error } = await sb
+      .from("depositos")
+      .select("id, igreja_id, valor, status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!dep) throw new Error("Deposito non trovato");
+    if (dep.status !== "pendente") throw new Error("Deposito già elaborato");
+
+    const { data: igreja, error: igErr } = await sb
+      .from("igrejas")
+      .select("id, saldo")
+      .eq("id", dep.igreja_id)
+      .maybeSingle();
+    if (igErr || !igreja) throw new Error("Chiesa non trovata");
+
+    const valor = roundMoney(Number(dep.valor));
+    const novoSaldo = roundMoney(Number(igreja.saldo ?? 0) + valor);
+
+    const { error: dErr } = await sb
+      .from("depositos")
+      .update({
+        status: "confirmado",
+        confirmado_em: new Date().toISOString(),
+        observacao_admin: data.observacao_admin,
+      })
+      .eq("id", dep.id);
+    if (dErr) throw new Error(dErr.message);
+
+    const { error: sErr } = await sb.from("igrejas").update({ saldo: novoSaldo }).eq("id", igreja.id);
+    if (sErr) throw new Error(sErr.message);
+
+    const { error: mErr } = await sb.from("movimentacoes_saldo").insert({
+      igreja_id: igreja.id,
+      tipo: "deposito",
+      valor,
+      deposito_id: dep.id,
+      descricao: "Deposito confermato",
+    });
+    if (mErr) throw new Error(mErr.message);
+
+    return { ok: true, saldo: novoSaldo };
+  });
+
+export const adminRejeitarDeposito = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string; observacao_admin?: string | null }) => ({
+    id: z.string().uuid().parse(d.id),
+    observacao_admin: d.observacao_admin ? z.string().max(500).parse(d.observacao_admin) : null,
+  }))
+  .handler(async ({ data }) => {
+    const sb = await admin();
+    const { data: dep, error } = await sb
+      .from("depositos")
+      .select("id, status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!dep) throw new Error("Deposito non trovato");
+    if (dep.status !== "pendente") throw new Error("Deposito già elaborato");
+
+    const { error: uErr } = await sb
+      .from("depositos")
+      .update({
+        status: "rejeitado",
+        rejeitado_em: new Date().toISOString(),
+        observacao_admin: data.observacao_admin,
+      })
+      .eq("id", dep.id);
+    if (uErr) throw new Error(uErr.message);
+    return { ok: true };
+  });

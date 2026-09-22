@@ -6,7 +6,7 @@ import { adminCheck, adminLogin, adminLogout } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogOut, ClipboardList, Package, Church, Boxes } from "lucide-react";
+import { LogOut, ClipboardList, Package, Church, Boxes, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin")({
@@ -96,6 +96,7 @@ function AuthedShell() {
         </div>
         <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-2 text-sm sm:px-6">
           <NavTab to="/admin/pedidos" icon={<ClipboardList className="h-3.5 w-3.5" />} label="Ordini" />
+          <NavTab to="/admin/depositos" icon={<Wallet className="h-3.5 w-3.5" />} label="Depositi" />
           <NavTab to="/admin/produtos" icon={<Package className="h-3.5 w-3.5" />} label="Prodotti" />
           <NavTab to="/admin/estoque" icon={<Boxes className="h-3.5 w-3.5" />} label="Magazzino" />
           <NavTab to="/admin/igrejas" icon={<Church className="h-3.5 w-3.5" />} label="Chiese" />

@@ -85,6 +85,56 @@ export type Database = {
           },
         ]
       }
+      depositos: {
+        Row: {
+          confirmado_em: string | null
+          created_at: string
+          drive_file_id: string | null
+          id: string
+          igreja_id: string
+          imagem_url: string | null
+          numero_transacao: string
+          observacao_admin: string | null
+          rejeitado_em: string | null
+          status: Database["public"]["Enums"]["deposito_status"]
+          valor: number
+        }
+        Insert: {
+          confirmado_em?: string | null
+          created_at?: string
+          drive_file_id?: string | null
+          id?: string
+          igreja_id: string
+          imagem_url?: string | null
+          numero_transacao: string
+          observacao_admin?: string | null
+          rejeitado_em?: string | null
+          status?: Database["public"]["Enums"]["deposito_status"]
+          valor: number
+        }
+        Update: {
+          confirmado_em?: string | null
+          created_at?: string
+          drive_file_id?: string | null
+          id?: string
+          igreja_id?: string
+          imagem_url?: string | null
+          numero_transacao?: string
+          observacao_admin?: string | null
+          rejeitado_em?: string | null
+          status?: Database["public"]["Enums"]["deposito_status"]
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "depositos_igreja_id_fkey"
+            columns: ["igreja_id"]
+            isOneToOne: false
+            referencedRelation: "igrejas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       igrejas: {
         Row: {
           ativo: boolean
@@ -94,6 +144,7 @@ export type Database = {
           nome: string
           regiao: string | null
           responsavel: string | null
+          saldo: number
           telefone: string | null
           updated_at: string
         }
@@ -105,6 +156,7 @@ export type Database = {
           nome: string
           regiao?: string | null
           responsavel?: string | null
+          saldo?: number
           telefone?: string | null
           updated_at?: string
         }
@@ -116,10 +168,66 @@ export type Database = {
           nome?: string
           regiao?: string | null
           responsavel?: string | null
+          saldo?: number
           telefone?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      movimentacoes_saldo: {
+        Row: {
+          created_at: string
+          deposito_id: string | null
+          descricao: string | null
+          id: string
+          igreja_id: string
+          pedido_id: string | null
+          tipo: Database["public"]["Enums"]["movimentacao_saldo_tipo"]
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          deposito_id?: string | null
+          descricao?: string | null
+          id?: string
+          igreja_id: string
+          pedido_id?: string | null
+          tipo: Database["public"]["Enums"]["movimentacao_saldo_tipo"]
+          valor: number
+        }
+        Update: {
+          created_at?: string
+          deposito_id?: string | null
+          descricao?: string | null
+          id?: string
+          igreja_id?: string
+          pedido_id?: string | null
+          tipo?: Database["public"]["Enums"]["movimentacao_saldo_tipo"]
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimentacoes_saldo_deposito_id_fkey"
+            columns: ["deposito_id"]
+            isOneToOne: false
+            referencedRelation: "depositos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_saldo_igreja_id_fkey"
+            columns: ["igreja_id"]
+            isOneToOne: false
+            referencedRelation: "igrejas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_saldo_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       movimentacoes_estoque: {
         Row: {
@@ -231,6 +339,8 @@ export type Database = {
           solicitante_nome: string | null
           status: Database["public"]["Enums"]["pedido_status"]
           updated_at: string
+          valor_pago_bonifico: number
+          valor_pago_saldo: number
         }
         Insert: {
           aprovado_em?: string | null
@@ -248,6 +358,8 @@ export type Database = {
           solicitante_nome?: string | null
           status?: Database["public"]["Enums"]["pedido_status"]
           updated_at?: string
+          valor_pago_bonifico?: number
+          valor_pago_saldo?: number
         }
         Update: {
           aprovado_em?: string | null
@@ -265,6 +377,8 @@ export type Database = {
           solicitante_nome?: string | null
           status?: Database["public"]["Enums"]["pedido_status"]
           updated_at?: string
+          valor_pago_bonifico?: number
+          valor_pago_saldo?: number
         }
         Relationships: [
           {
@@ -343,6 +457,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      deposito_status: "pendente" | "confirmado" | "rejeitado"
+      movimentacao_saldo_tipo: "deposito" | "uso_pedido" | "estorno" | "ajuste"
       movimentacao_tipo:
         | "entrada"
         | "saida"
@@ -483,6 +599,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      deposito_status: ["pendente", "confirmado", "rejeitado"],
+      movimentacao_saldo_tipo: ["deposito", "uso_pedido", "estorno", "ajuste"],
       movimentacao_tipo: [
         "entrada",
         "saida",
